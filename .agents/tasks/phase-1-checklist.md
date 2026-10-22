@@ -82,8 +82,8 @@ Key things that should exist:
 ```bash
 # path alias is set
 grep -q '"@/\*"' tsconfig.json && echo "alias OK"
-# Tailwind content path points at src
-grep -q "./src/**/*.{ts,tsx}" tailwind.config.ts && echo "tailwind OK"
+# Tailwind content path points at src (fixed-string match, avoids regex pitfalls)
+grep -qF './src/**/*.{ts,tsx}' tailwind.config.ts && echo "tailwind OK"
 # env example lists every required key (13 vars)
 grep -cE '^(NEXT_PUBLIC_|SUPABASE_|UPSTASH_|RESEND_|ADMIN_|TURNSTILE_)' .env.example
 ```
