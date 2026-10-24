@@ -48,7 +48,7 @@ export default async function PaperPage({ params }: PaperPageProps) {
 
   const { data: paper, error } = await supabase
     .from('papers')
-    .select('*, courses(*)')
+    .select<'*, courses(*)', PaperWithCourse>('*, courses(*)')
     .eq('id', params.id)
     .eq('status', 'published')
     .maybeSingle()
@@ -57,19 +57,18 @@ export default async function PaperPage({ params }: PaperPageProps) {
     notFound()
   }
 
-  const typedPaper = paper as unknown as PaperWithCourse
-  const course = typedPaper.courses
+  const course = paper.courses
   const semesterLabel: Record<string, string> = {
     first: 'First Semester',
     second: 'Second Semester',
     resit: 'Resit',
   }
-  const semesterText = typedPaper.semester
-    ? (semesterLabel[typedPaper.semester] ?? typedPaper.semester)
+  const semesterText = paper.semester
+    ? (semesterLabel[paper.semester] ?? paper.semester)
     : '—'
 
-  const uploadedDate = typedPaper.created_at
-    ? new Date(typedPaper.created_at).toLocaleDateString('en-GB', {
+  const uploadedDate = paper.created_at
+    ? new Date(paper.created_at).toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -108,7 +107,7 @@ export default async function PaperPage({ params }: PaperPageProps) {
             aria-current="page"
             className="max-w-[200px] truncate font-medium text-gray-800"
           >
-            {typedPaper.title}
+            {paper.title}
           </li>
         </ol>
       </nav>
@@ -117,7 +116,7 @@ export default async function PaperPage({ params }: PaperPageProps) {
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
         {/* Title */}
         <h1 className="mb-4 text-2xl font-bold text-gray-900">
-          {typedPaper.title}
+          {paper.title}
         </h1>
 
         {/* Meta grid */}
@@ -131,10 +130,10 @@ export default async function PaperPage({ params }: PaperPageProps) {
             </div>
           )}
 
-          {typedPaper.year && (
+          {paper.year && (
             <div>
               <dt className="font-medium text-gray-500">Year</dt>
-              <dd className="mt-0.5 text-gray-900">{typedPaper.year}</dd>
+              <dd className="mt-0.5 text-gray-900">{paper.year}</dd>
             </div>
           )}
 
@@ -145,32 +144,32 @@ export default async function PaperPage({ params }: PaperPageProps) {
             </dd>
           </div>
 
-          {typedPaper.level && (
+          {paper.level && (
             <div>
               <dt className="font-medium text-gray-500">Level</dt>
               <dd className="mt-0.5">
-                <Badge color="gray">Level {typedPaper.level}</Badge>
+                <Badge color="gray">Level {paper.level}</Badge>
               </dd>
             </div>
           )}
 
           <div>
             <dt className="font-medium text-gray-500">Downloads</dt>
-            <dd className="mt-0.5 text-gray-900">{typedPaper.downloads}</dd>
+            <dd className="mt-0.5 text-gray-900">{paper.downloads}</dd>
           </div>
 
           {uploadedDate && (
             <div>
               <dt className="font-medium text-gray-500">Uploaded</dt>
               <dd className="mt-0.5 text-gray-900">
-                <time dateTime={typedPaper.created_at}>{uploadedDate}</time>
+                <time dateTime={paper.created_at}>{uploadedDate}</time>
               </dd>
             </div>
           )}
         </dl>
 
         {/* Download */}
-        <DownloadButton paperId={typedPaper.id} />
+        <DownloadButton paperId={paper.id} />
       </div>
     </main>
   )

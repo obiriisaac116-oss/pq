@@ -123,7 +123,8 @@ export const searchSchema = z.object({
   q: z.string().max(200).optional(),
   programme: z.string().max(100).optional(),
   course_code: z.string().max(20).optional(),
-  level: z.coerce.number().int().optional(),
+  // Keep level as a string to match the papers.level TEXT column end-to-end.
+  level: z.string().optional(),
   year: z.coerce.number().int().optional(),
   semester: z.enum(SEMESTER_VALUES).optional(),
   page: z.coerce.number().int().min(1).default(1),

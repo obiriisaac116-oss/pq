@@ -69,10 +69,24 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const supabase = await createClient()
 
+  // When programme or course_code filters are active, resolve matching course
+  // IDs first.  PostgREST dot-notation filters on embedded relations are
+  // outer-join predicates and silently no-op for rows with no joined course.
+  // Fetching the IDs separately and using `.in('course_id', ids)` gives a
+  // reliable inner-join-style predicate.
+  let courseIds: string[] | null = null
+  if (course_code || programme) {
+    let courseQuery = supabase.from('courses').select('id')
+    if (course_code) courseQuery = courseQuery.ilike('code', `${course_code}%`)
+    if (programme) courseQuery = courseQuery.ilike('programme', `%${programme}%`)
+    const { data: matchedCourses } = await courseQuery
+    courseIds = (matchedCourses ?? []).map((c) => c.id)
+  }
+
   // Build query — anon client, RLS restricts to published papers.
   let query = supabase
     .from('papers')
-    .select('*, courses(*)', { count: 'exact' })
+    .select<'*, courses(*)', PaperWithCoursePublic>('*, courses(*)', { count: 'exact' })
     .eq('status', 'published')
 
   if (q) {
@@ -81,11 +95,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       config: 'english',
     })
   }
-  if (level) query = query.eq('level', String(level))
+  if (level) query = query.eq('level', level)
   if (year) query = query.eq('year', year)
   if (semester) query = query.eq('semester', semester)
-  if (course_code) query = query.ilike('courses.code', `${course_code}%`)
-  if (programme) query = query.ilike('courses.programme', `%${programme}%`)
+  // Apply course filter: if courseIds is an empty array, no papers can match.
+  if (courseIds !== null) {
+    if (courseIds.length === 0) {
+      // No courses matched — return zero papers by using an impossible filter.
+      query = query.in('course_id', [''])
+    } else {
+      query = query.in('course_id', courseIds)
+    }
+  }
 
   query = query
     .order('created_at', { ascending: false })
@@ -157,7 +178,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <PaperList papers={[]} loading />
         }
       >
-        <PaperList papers={(papers ?? []) as unknown as PaperWithCoursePublic[]} />
+        <PaperList papers={papers ?? []} />
       </Suspense>
 
       {/* Pagination */}
