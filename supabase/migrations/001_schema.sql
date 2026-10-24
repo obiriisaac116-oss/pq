@@ -103,3 +103,36 @@ CREATE TRIGGER papers_updated_at
 CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- =============================================================================
+-- increment_downloads
+--   Called by GET /api/papers/[id]/download to atomically bump the counter
+--   without a read-modify-write race. SECURITY DEFINER so it bypasses RLS.
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.increment_downloads(paper_id uuid)
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.papers SET downloads = downloads + 1 WHERE id = paper_id;
+$$;
+
+-- =============================================================================
+-- handle_new_user
+--   Automatically creates a profile row when a new auth user signs up.
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, role, full_name)
+  VALUES (NEW.id, 'student', NEW.raw_user_meta_data->>'full_name');
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
