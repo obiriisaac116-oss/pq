@@ -25,16 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   }
 
-  // 3. Validate with ContactSchema
-  const parsed = contactSchema.safeParse(body)
-  if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message ?? 'Invalid input'
-    return NextResponse.json({ error: message }, { status: 400 })
-  }
-
-  const { name, email, message, cf_token } = parsed.data
-
-  // 4. Get client IP
+  // 3. Get client IP
   const forwarded = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
   const ip =
@@ -42,11 +33,21 @@ export async function POST(request: NextRequest) {
     realIp ??
     '127.0.0.1'
 
-  // 5. Rate limiting
+  // 4. Rate limiting — placed before Zod validation so malformed requests
+  //    also consume quota and cannot be used to probe the schema at scale.
   const { success: rateLimitOk } = await contactRatelimit.limit(ip)
   if (!rateLimitOk) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
+
+  // 5. Validate with ContactSchema
+  const parsed = contactSchema.safeParse(body)
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? 'Invalid input'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+
+  const { name, email, message, cf_token } = parsed.data
 
   // 6. Verify Cloudflare Turnstile
   const turnstileBody = new URLSearchParams({

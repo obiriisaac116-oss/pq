@@ -30,9 +30,6 @@ export function ContactForm() {
   const [error, setError] = useState<string | null>(null)
 
   // Stable IDs for aria-describedby wiring
-  const nameErrorId = useId()
-  const emailErrorId = useId()
-  const messageErrorId = useId()
   const formErrorId = useId()
 
   function handleChange(
@@ -178,7 +175,7 @@ export function ContactForm() {
             autoComplete="name"
             value={form.name}
             onChange={handleChange}
-            aria-describedby={error ? nameErrorId : undefined}
+            aria-describedby={error ? formErrorId : undefined}
             aria-required="true"
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             disabled={submitting}
@@ -201,7 +198,7 @@ export function ContactForm() {
             autoComplete="email"
             value={form.email}
             onChange={handleChange}
-            aria-describedby={error ? emailErrorId : undefined}
+            aria-describedby={error ? formErrorId : undefined}
             aria-required="true"
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             disabled={submitting}
@@ -223,7 +220,7 @@ export function ContactForm() {
             rows={5}
             value={form.message}
             onChange={handleChange}
-            aria-describedby={error ? messageErrorId : undefined}
+            aria-describedby={error ? formErrorId : undefined}
             aria-required="true"
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             disabled={submitting}

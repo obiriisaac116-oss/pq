@@ -47,7 +47,7 @@ export async function sendContactNotification(
   const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL!,
     to: process.env.ADMIN_EMAIL!,
-    subject: `New contact message from ${name}`,
+    subject: `New contact message from ${name.replace(/[\r\n]/g, ' ')}`,
     html,
   })
 

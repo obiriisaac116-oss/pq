@@ -109,7 +109,7 @@ export const contactSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.email().max(254),
   message: z.string().min(10).max(2000),
-  honeypot: z.string().max(0), // must be empty
+  honeypot: z.string().optional(), // pre-checked before schema; optional so bots never get a revealing 400
   cf_token: z.string().min(1), // Cloudflare Turnstile token
 })
 
