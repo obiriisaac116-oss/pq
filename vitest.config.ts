@@ -5,7 +5,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    // Scaffold has no tests yet; keep the runner green instead of failing on an empty suite.
+    // Include only unit tests (e2e tests are handled by Playwright).
+    include: ['tests/unit/**/*.test.ts'],
+    // Keep the runner green if the suite is empty.
     passWithNoTests: true,
   },
   resolve: {
