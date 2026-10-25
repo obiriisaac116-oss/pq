@@ -1,5 +1,21 @@
 {
   "verdict": "APPROVED",
-  "findings": [],
+  "findings": [
+    {
+      "label": "presignSchema lower-boundary gap",
+      "detail": "presignSchema has size: z.number().int().min(1) but no test covers size: 0 or size: -1. Add two cases to prevent regressions if the min constraint is accidentally removed.",
+      "confidence": "confirmed"
+    },
+    {
+      "label": "Self-referential `to` assertion in email.test.ts",
+      "detail": "The 'sends to ADMIN_EMAIL' test asserts callArg.to === process.env.ADMIN_EMAIL ?? 'admin@example.com', but ADMIN_EMAIL was just assigned in the same test so the assertion is tautological. Assert the literal string 'admin@example.com' instead.",
+      "confidence": "confirmed"
+    },
+    {
+      "label": "toBeAttached() instead of toBeVisible() in filter assertion",
+      "detail": "search.spec.ts uses toBeAttached() for the filter-element check. A hidden element passes this assertion, so a CSS regression hiding the filters would go undetected. Use toBeVisible() instead.",
+      "confidence": "confirmed"
+    }
+  ],
   "reviewDoc": "/home/hysterical/Desktop/PQ/.agents/tasks/phase7-review.md"
 }

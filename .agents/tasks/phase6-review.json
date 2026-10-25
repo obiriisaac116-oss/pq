@@ -1,0 +1,9 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    "`aria-describedby` only points to global error banner — all three inputs share one `aria-describedby` wired to the global error banner with no per-field error association; add per-field error state and individual error IDs.",
+    "Turnstile widget has no accessible label — the widget renders inside a plain `<div>` with no `<label>` or `aria-label`; wrap it with a visually-hidden label or pass `aria-labelledby` if the widget API supports it.",
+    "`x-forwarded-for` not validated against trusted proxy — the route takes the leftmost header value, which is client-controlled; confirm Render strips/overwrites this header, or extract the rightmost trusted-proxy-appended value instead."
+  ],
+  "reviewDoc": "/home/hysterical/Desktop/PQ/.agents/tasks/phase6-review.md"
+}
