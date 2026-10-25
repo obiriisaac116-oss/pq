@@ -9,8 +9,8 @@ import { test, expect } from '@playwright/test'
 test.describe('Home / Search page', () => {
   test('loads the home page', async ({ page }) => {
     await page.goto('/')
-    // The page should respond with a 200
-    await expect(page).toHaveURL('/')
+    // Verify actual page content renders, not just the URL
+    await expect(page.locator('h1')).toBeVisible()
   })
 
   test('search input is visible', async ({ page }) => {

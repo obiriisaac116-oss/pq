@@ -3,7 +3,7 @@
 // Unit tests for src/lib/email.ts — sendContactNotification().
 // Mocks the Resend SDK so no real API key is needed.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mock 'resend' before importing the module under test.
@@ -34,6 +34,11 @@ describe('sendContactNotification', () => {
     vi.clearAllMocks()
     // Default: successful send (no error returned)
     mockEmailsSend.mockResolvedValue({ data: { id: 'mock-id' }, error: null })
+  })
+
+  afterEach(() => {
+    delete process.env.ADMIN_EMAIL
+    delete process.env.RESEND_FROM_EMAIL
   })
 
   it('calls resend.emails.send with the correct arguments', async () => {

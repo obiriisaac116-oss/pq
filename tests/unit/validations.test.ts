@@ -38,16 +38,11 @@ describe('contactSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('fails when honeypot is non-empty', () => {
-    // honeypot is optional in the schema (pre-checked by the route), but
-    // a non-zero-length string should fail max(0) if enforced.
-    // The contactSchema has honeypot: z.string().optional() — the route
-    // manually rejects non-empty honeypot. We verify the route-level guard
-    // by testing that the field is accepted by the schema but the route
-    // would reject it. For the schema test we confirm the field is parsed.
+  it('schema accepts honeypot (enforced by route, not schema)', () => {
+    // contactSchema marks honeypot as z.string().optional() — the bot-rejection
+    // guard lives in the route handler, not the schema. This test documents
+    // that the schema accepts a non-empty honeypot value; the route rejects it.
     const result = contactSchema.safeParse({ ...valid, honeypot: 'spam' })
-    // The schema itself marks honeypot as optional — the bot guard is in the
-    // route handler. The schema still parses successfully.
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.honeypot).toBe('spam')

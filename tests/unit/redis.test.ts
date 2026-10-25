@@ -51,10 +51,23 @@ vi.mock('@upstash/ratelimit', () => {
 // Import after mocks are set up
 // ---------------------------------------------------------------------------
 import { contactRatelimit, downloadRatelimit } from '@/lib/redis'
+import { Ratelimit } from '@upstash/ratelimit'
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+describe('redis module — rate-limit window configuration', () => {
+  // These assertions run before any vi.clearAllMocks() to inspect the calls
+  // that Ratelimit.slidingWindow received at module-init time.
+  it('configures contactRatelimit with slidingWindow(3, "60 m")', () => {
+    expect(Ratelimit.slidingWindow).toHaveBeenCalledWith(3, '60 m')
+  })
+
+  it('configures downloadRatelimit with slidingWindow(30, "60 m")', () => {
+    expect(Ratelimit.slidingWindow).toHaveBeenCalledWith(30, '60 m')
+  })
+})
+
 describe('redis module', () => {
   beforeEach(() => {
     vi.clearAllMocks()
