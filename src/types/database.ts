@@ -149,6 +149,29 @@ export type ContactMessagesUpdate = {
 }
 
 // -----------------------------------------------------------------------------
+// subscribers
+// -----------------------------------------------------------------------------
+export type SubscribersRow = {
+  id: string
+  email: string
+  created_at: string
+  confirmed: boolean
+}
+
+export type SubscribersInsert = {
+  id?: string
+  email: string
+  created_at?: string
+  confirmed?: boolean
+}
+
+export type SubscribersUpdate = {
+  id?: string
+  email?: string
+  confirmed?: boolean
+}
+
+// -----------------------------------------------------------------------------
 // Database (compatible with createClient<Database>)
 // -----------------------------------------------------------------------------
 export type Database = {
@@ -183,6 +206,12 @@ export type Database = {
         Row: ContactMessagesRow
         Insert: ContactMessagesInsert
         Update: ContactMessagesUpdate
+        Relationships: []
+      }
+      subscribers: {
+        Row: SubscribersRow
+        Insert: SubscribersInsert
+        Update: SubscribersUpdate
         Relationships: []
       }
     }

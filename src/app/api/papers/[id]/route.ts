@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { paperUpdateSchema } from '@/lib/validations'
+import { sendSubscriberNotification } from '@/lib/email'
 
 // ---------------------------------------------------------------------------
 // Helper: verify admin
@@ -119,6 +120,21 @@ export async function PATCH(
   if (error) {
     console.error('[PATCH /api/papers/[id]]', error)
     return NextResponse.json({ error: 'Update failed' }, { status: 500 })
+  }
+
+  // Fire-and-forget subscriber notification when a paper is published.
+  if (parsed.data.status === 'published') {
+    void (async () => {
+      try {
+        const { data: subs } = await adminClient.from('subscribers').select('email')
+        const emails = (subs ?? []).map((s) => s.email)
+        const siteUrl =
+          process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pq-questions26.onrender.com'
+        await sendSubscriberNotification(data.title, `${siteUrl}/papers/${data.id}`, emails)
+      } catch (e) {
+        console.error('[PATCH /api/papers/[id]] subscriber notification failed:', e)
+      }
+    })()
   }
 
   return NextResponse.json({ data })

@@ -65,3 +65,51 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 }
+
+/**
+ * Sends a notification email to all subscribers when a new paper is published.
+ * Uses BCC so subscriber addresses are not exposed to each other.
+ * Returns silently if subscriberEmails is empty.
+ */
+export async function sendSubscriberNotification(
+  paperTitle: string,
+  paperUrl: string,
+  subscriberEmails: string[],
+): Promise<void> {
+  if (subscriberEmails.length === 0) return
+
+  const resend = new Resend(process.env.RESEND_API_KEY!)
+  const fromEmail = process.env.RESEND_FROM_EMAIL!
+
+  const html = `
+    <div style="font-family:sans-serif;font-size:14px;max-width:600px;margin:0 auto">
+      <h2 style="color:#1d4ed8">New Paper Available on PastQuestions GH</h2>
+      <p>A new past question paper has just been published:</p>
+      <p style="font-size:16px;font-weight:bold;color:#111827">${escapeHtml(paperTitle)}</p>
+      <p>
+        <a
+          href="${escapeHtml(paperUrl)}"
+          style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600"
+        >
+          View Paper
+        </a>
+      </p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />
+      <p style="color:#6b7280;font-size:12px">
+        You are receiving this because you subscribed to PastQuestions GH updates.
+      </p>
+    </div>
+  `
+
+  const { error } = await resend.emails.send({
+    from: fromEmail,
+    to: fromEmail,
+    bcc: subscriberEmails,
+    subject: `New paper available: ${paperTitle}`,
+    html,
+  })
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`)
+  }
+}

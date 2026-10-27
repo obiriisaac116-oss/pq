@@ -29,3 +29,9 @@ export const downloadRatelimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(30, '60 m'),
   prefix: 'rl:download',
 })
+
+export const subscribeRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, '60 m'),
+  prefix: 'rl:subscribe',
+})

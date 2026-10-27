@@ -36,6 +36,16 @@ const FilterPanel = dynamicImport(
   },
 )
 
+const EmailSubscribeForm = dynamicImport(
+  () => import('@/components/EmailSubscribeForm'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 animate-pulse rounded-lg bg-gray-100" />
+    ),
+  },
+)
+
 export const metadata: Metadata = {
   title: 'PastQuestions GH — Find Your Past Exam Papers',
   description: 'Browse and download past examination papers for your university courses.',
@@ -146,6 +156,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         </div>
       </section>
+
+      {/* Email subscription */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="mx-auto max-w-3xl px-4 py-6">
+          <Suspense fallback={<div className="h-24 animate-pulse rounded-lg bg-gray-100" />}>
+            <EmailSubscribeForm />
+          </Suspense>
+        </div>
+      </div>
 
       {/* Filters + results */}
       <div className="mx-auto max-w-7xl px-4 py-8">

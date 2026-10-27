@@ -19,7 +19,7 @@ import type { CoursesRow } from '@/types/database'
 export default async function AdminDashboard() {
   const db = createAdminClient()
 
-  const [papersRes, coursesRes, messagesRes, topPapersRes, recentPapersRes] =
+  const [papersRes, coursesRes, messagesRes, topPapersRes, recentPapersRes, subscribersRes] =
     await Promise.all([
       db.from('papers').select('status'),
       db.from('courses').select('id', { count: 'exact', head: true }),
@@ -37,6 +37,7 @@ export default async function AdminDashboard() {
         .select('id, title, status, created_at')
         .order('created_at', { ascending: false })
         .limit(5),
+      db.from('subscribers').select('id', { count: 'exact', head: true }),
     ])
 
   const papers = papersRes.data ?? []
@@ -44,6 +45,7 @@ export default async function AdminDashboard() {
   const draftCount = papers.filter((p) => p.status === 'draft').length
   const coursesCount = coursesRes.count ?? 0
   const unreadCount = messagesRes.count ?? 0
+  const subscribersCount = subscribersRes.count ?? 0
 
   const topPapers = topPapersRes.data ?? []
   const recentPapers = recentPapersRes.data ?? []
@@ -73,6 +75,12 @@ export default async function AdminDashboard() {
       href: '/admin/messages',
       color: 'bg-purple-50 text-purple-700',
     },
+    {
+      label: 'Subscribers',
+      value: subscribersCount,
+      href: '/admin',
+      color: 'bg-pink-50 text-pink-700',
+    },
   ]
 
   return (
@@ -82,7 +90,7 @@ export default async function AdminDashboard() {
         <h1 className="mb-6 text-2xl font-bold text-gray-900">Dashboard</h1>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {stats.map(({ label, value, href, color }) => (
             <Link
               key={label}
