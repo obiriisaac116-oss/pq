@@ -1,7 +1,7 @@
 {
   "task_id": "task-improvements",
   "task_description": "Implement 13 improvement items for the PastQuestions GH website: watermark, course management admin page, bulk upload UX, PDF/image preview, sitemap/robots, PWA manifest, paper edit, analytics dashboard, dark mode, search autocomplete, email subscription, WhatsApp share, smart upload defaults.",
-  "status": "pending",
+  "status": "completed",
   "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
   "blocked_reason": null
 }
