@@ -20,4 +20,9 @@ CREATE POLICY "Anyone can subscribe"
 CREATE POLICY "Admins can manage subscribers"
   ON subscribers
   FOR ALL
-  USING (is_admin());
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
