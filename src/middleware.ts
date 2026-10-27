@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
 import type { Database } from '@/types/database'
 
@@ -8,23 +8,14 @@ import type { Database } from '@/types/database'
  * Edge-runtime middleware: refreshes the Supabase auth session and guards the
  * admin area.
  *
- * - The session is refreshed on every matched request and the rotated
- *   cookies (plus the no-cache response headers) are written back onto the
- *   outgoing response.
- * - `/admin/*`: unauthenticated users → `/login?error=auth-required`;
- *   authenticated non-admins → `/login?error=not-admin`.
- * - `/login`: authenticated admins → `/admin`.
- *
- * Edge-safe: this uses ONLY the public anon key and the cookie helpers from
- * `@supabase/ssr` — never the service-role key and no Node-only APIs. The
- * admin role is read from `profiles` through the anon client, which RLS
- * permits because every user can read their own profile row
- * (`auth.uid() = id`), so there is no chicken-and-egg with RLS during session
- * refresh.
+ * Role check uses the service-role client (bypasses RLS) to avoid any
+ * chicken-and-egg issue where the anon client can't read profiles before
+ * the session is fully established.
  */
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request })
 
+  // Session client — anon key + cookies, refreshes the access token.
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,13 +26,10 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Keep the request cookie jar in sync so downstream handlers see
-            // the refreshed token, and persist it on the response.
             request.cookies.set(name, value)
             response.cookies.set(name, value, options)
           })
           if (headers) {
-            // Auth cookies must never be cached by CDNs / reverse proxies.
             for (const [key, value] of Object.entries(headers)) {
               response.headers.set(key, value)
             }
@@ -61,7 +49,7 @@ export async function middleware(request: NextRequest) {
   // Authenticated admins visiting /login are sent straight to /admin.
   if (pathname === '/login') {
     if (user) {
-      const role = await getProfileRole(supabase, user.id)
+      const role = await getProfileRole(user.id)
       if (role === 'admin') {
         return redirectTo(request, '/admin')
       }
@@ -74,7 +62,7 @@ export async function middleware(request: NextRequest) {
     return redirectTo(request, '/login', { error: 'auth-required' })
   }
 
-  const role = await getProfileRole(supabase, user.id)
+  const role = await getProfileRole(user.id)
   if (role !== 'admin') {
     return redirectTo(request, '/login', { error: 'not-admin' })
   }
@@ -82,12 +70,18 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
-/** Reads the caller's own `profiles.role` row (RLS permits auth.uid() = id). */
-async function getProfileRole(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-): Promise<string | null> {
-  const { data } = await supabase
+/**
+ * Reads profiles.role using the service-role client which bypasses RLS.
+ * This avoids the race condition where the anon client can't read the
+ * profile row before the session cookie is fully established in the middleware.
+ */
+async function getProfileRole(userId: string): Promise<string | null> {
+  const admin = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  )
+  const { data } = await admin
     .from('profiles')
     .select('role')
     .eq('id', userId)
@@ -112,8 +106,5 @@ function redirectTo(
 }
 
 export const config = {
-  // Only the admin area and the login page run through this middleware.
-  // Static assets, /api, and public routes are not matched and bypass it
-  // entirely — API routes self-protect by reading the session in-handler.
   matcher: ['/admin/:path*', '/login'],
 }
