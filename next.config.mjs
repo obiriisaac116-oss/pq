@@ -22,7 +22,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https://*.supabase.co",
-              "connect-src 'self' https://*.supabase.co https://api.resend.com",
+              "connect-src 'self' https://*.supabase.co https://api.resend.com https://challenges.cloudflare.com https://*.upstash.io",
               "frame-src https://challenges.cloudflare.com",
               "object-src 'none'",
               "base-uri 'self'",
