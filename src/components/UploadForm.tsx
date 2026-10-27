@@ -18,7 +18,7 @@
 //   - On submit with no new file: PATCH /api/papers/[id] with metadata only.
 //   - On submit with a new file: full presign+upload+PATCH.
 
-import { useState, useRef, ChangeEvent, FormEvent } from 'react'
+import { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react'
 
 import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/validations'
 import type { CoursesRow, PapersRow } from '@/types/database'
@@ -29,6 +29,12 @@ type UploadFormProps = {
 }
 
 type FormState = 'idle' | 'uploading' | 'saving' | 'success' | 'error'
+
+type LastUpload = {
+  courseId: string
+  level: string
+  semester: string
+}
 
 const ALLOWED_TYPES = ALLOWED_MIME_TYPES as readonly string[]
 
@@ -54,7 +60,10 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
   const [progress, setProgress] = useState(0)
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [lastUpload, setLastUpload] = useState<LastUpload | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const isDraftAndContinueRef = useRef(false)
   const [showAddCourse, setShowAddCourse] = useState(false)
   const [localCourses, setLocalCourses] = useState<CoursesRow[]>(courses)
   const [newCode, setNewCode] = useState('')
@@ -62,6 +71,18 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
   const [newProgramme, setNewProgramme] = useState('')
   const [addingCourse, setAddingCourse] = useState(false)
   const [addCourseError, setAddCourseError] = useState<string | null>(null)
+
+  // Smart defaults on mount: restore last used courseId/level/semester from localStorage.
+  useEffect(() => {
+    if (!editPaper) {
+      const savedCourseId = localStorage.getItem('pq:lastCourseId')
+      const savedLevel = localStorage.getItem('pq:lastLevel')
+      const savedSemester = localStorage.getItem('pq:lastSemester')
+      if (savedCourseId) setCourseId(savedCourseId)
+      if (savedLevel) setLevel(savedLevel)
+      if (savedSemester) setSemester(savedSemester)
+    }
+  }, [editPaper])
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0] ?? null
@@ -250,7 +271,27 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           throw new Error(error ?? 'Failed to save paper record.')
         }
 
-        // Reset form after successful upload.
+        // Persist smart defaults to localStorage before deciding what to reset.
+        localStorage.setItem('pq:lastCourseId', courseId)
+        localStorage.setItem('pq:lastLevel', level)
+        localStorage.setItem('pq:lastSemester', semester)
+
+        // Save last upload for the "Upload another" restore action.
+        const snapshot: LastUpload = { courseId, level, semester }
+        setLastUpload(snapshot)
+
+        if (isDraftAndContinueRef.current) {
+          // Draft + upload another: keep courseId/level/semester, clear title + file only.
+          isDraftAndContinueRef.current = false
+          setTitle('')
+          setFile(null)
+          setProgress(0)
+          if (fileInputRef.current) fileInputRef.current.value = ''
+          setFormState('idle')
+          return
+        }
+
+        // Normal success: reset form.
         setTitle('')
         setCourseId('')
         setLevel('100')
@@ -271,7 +312,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
   const isSubmitting = formState === 'uploading' || formState === 'saving'
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5" noValidate>
       {/* Edit-mode banner */}
       {editPaper && (
         <p className="mb-4 rounded bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
@@ -288,6 +329,32 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           {editPaper
             ? 'Paper updated successfully.'
             : 'Paper uploaded successfully and saved as draft. You can publish it from the Papers page.'}
+
+          {/* Post-success actions (upload mode only) */}
+          {!editPaper && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (lastUpload) {
+                    setCourseId(lastUpload.courseId)
+                    setLevel(lastUpload.level)
+                    setSemester(lastUpload.semester)
+                  }
+                  setFormState('idle')
+                }}
+                className="rounded-md bg-green-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-800"
+              >
+                Upload another
+              </button>
+              <a
+                href="/admin/papers"
+                className="rounded-md border border-green-700 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50"
+              >
+                Go to papers
+              </a>
+            </div>
+          )}
         </div>
       )}
 
@@ -522,6 +589,21 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           'Upload paper'
         )}
       </button>
+
+      {/* Save as draft + upload another — upload mode only */}
+      {!editPaper && (
+        <button
+          type="button"
+          disabled={isSubmitting || !file}
+          onClick={() => {
+            isDraftAndContinueRef.current = true
+            formRef.current?.requestSubmit()
+          }}
+          className="flex w-full items-center justify-center rounded-md border border-brand-primary px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/5 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Save as draft + upload another
+        </button>
+      )}
     </form>
   )
 }

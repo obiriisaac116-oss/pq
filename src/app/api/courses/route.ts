@@ -10,12 +10,17 @@ const CreateCourseSchema = z.object({
   programme: z.string().min(2).max(200),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('courses')
-    .select('*')
-    .order('code', { ascending: true })
+  const q = req.nextUrl.searchParams.get('q')?.trim()
+
+  let query = supabase.from('courses').select('*').order('code', { ascending: true })
+
+  if (q) {
+    query = query.or(`code.ilike.%${q}%,name.ilike.%${q}%`)
+  }
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }

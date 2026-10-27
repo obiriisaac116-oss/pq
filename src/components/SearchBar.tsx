@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import type { CoursesRow } from '@/types/database'
 
 export function SearchBar() {
   const router = useRouter()
@@ -9,12 +10,26 @@ export function SearchBar() {
   const searchParams = useSearchParams()
   const [value, setValue] = React.useState(searchParams.get('q') ?? '')
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [suggestions, setSuggestions] = React.useState<CoursesRow[]>([])
+  const [showDropdown, setShowDropdown] = React.useState(false)
+  const wrapperRef = React.useRef<HTMLDivElement>(null)
 
   // Keep local value in sync when URL changes externally (e.g. filter panel
   // clears the search param).
   React.useEffect(() => {
     setValue(searchParams.get('q') ?? '')
   }, [searchParams])
+
+  // Close dropdown on click outside.
+  React.useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [])
 
   function updateUrl(nextValue: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -28,6 +43,24 @@ export function SearchBar() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
+  async function fetchSuggestions(term: string) {
+    if (term.length < 2) {
+      setSuggestions([])
+      setShowDropdown(false)
+      return
+    }
+    try {
+      const res = await fetch(`/api/courses?q=${encodeURIComponent(term)}`)
+      if (!res.ok) return
+      const data: CoursesRow[] = await res.json()
+      const first6 = data.slice(0, 6)
+      setSuggestions(first6)
+      setShowDropdown(first6.length > 0)
+    } catch {
+      // silently ignore network errors in autocomplete
+    }
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const next = e.target.value
     setValue(next)
@@ -35,11 +68,14 @@ export function SearchBar() {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       updateUrl(next)
+      fetchSuggestions(next)
     }, 300)
   }
 
   function handleClear() {
     setValue('')
+    setSuggestions([])
+    setShowDropdown(false)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     updateUrl('')
   }
@@ -52,7 +88,7 @@ export function SearchBar() {
   }, [])
 
   return (
-    <div role="search" className="relative w-full">
+    <div ref={wrapperRef} role="search" className="relative w-full">
       <label htmlFor="search-input" className="sr-only">
         Search past questions
       </label>
@@ -82,8 +118,13 @@ export function SearchBar() {
         type="search"
         role="searchbox"
         aria-label="Search past questions"
+        aria-autocomplete="list"
+        aria-controls={showDropdown ? 'search-suggestions' : undefined}
         value={value}
         onChange={handleChange}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setShowDropdown(false)
+        }}
         placeholder="Search by title, year, or course…"
         className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
       />
@@ -110,6 +151,33 @@ export function SearchBar() {
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
+      )}
+
+      {/* Autocomplete dropdown */}
+      {showDropdown && suggestions.length > 0 && (
+        <ul
+          id="search-suggestions"
+          role="listbox"
+          className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto"
+        >
+          {suggestions.map((c) => (
+            <li
+              key={c.id}
+              role="option"
+              aria-selected={false}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setValue(c.code)
+                updateUrl(c.code)
+                setShowDropdown(false)
+              }}
+              className="cursor-pointer px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              <span className="font-medium">{c.code}</span>{' '}
+              <span className="text-gray-500">— {c.name}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )
