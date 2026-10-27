@@ -25,14 +25,6 @@ export default async function UploadPage() {
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profile?.role !== 'admin') redirect('/login?error=not-admin')
-
   // Load courses via admin client so we see all courses (RLS allows public
   // read anyway, but using admin client is consistent with the rest of the
   // admin area and avoids an additional session propagation).

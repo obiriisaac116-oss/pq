@@ -30,14 +30,6 @@ export default async function MessagesPage() {
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profile?.role !== 'admin') redirect('/login?error=not-admin')
-
   const db = createAdminClient()
   const { data: messages } = await db
     .from('contact_messages')

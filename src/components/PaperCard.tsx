@@ -21,6 +21,28 @@ const semesterColor: Record<string, 'blue' | 'purple' | 'yellow'> = {
   resit: 'yellow',
 }
 
+function FileTypeIcon({ fileType }: { fileType: string }) {
+  if (fileType === 'pdf') {
+    return (
+      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-bold tracking-wide bg-red-100 text-red-700">
+        PDF
+      </span>
+    )
+  }
+  if (fileType === 'jpg' || fileType === 'jpeg') {
+    return (
+      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-bold tracking-wide bg-blue-100 text-blue-700">
+        JPG
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-bold tracking-wide bg-green-100 text-green-700">
+      PNG
+    </span>
+  )
+}
+
 export function PaperCard({ paper }: PaperCardProps) {
   const course = paper.courses
   const semester = paper.semester ?? 'first'
@@ -29,13 +51,18 @@ export function PaperCard({ paper }: PaperCardProps) {
   return (
     <article className="group relative flex flex-col rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md">
       {/* Badges row */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Badge color={semesterColor[semester] ?? 'blue'}>
-          {semesterLabel[semester] ?? semester}
-        </Badge>
-        {level && <Badge color="gray">Level {level}</Badge>}
-        {paper.year && (
-          <Badge color="green">{paper.year}</Badge>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge color={semesterColor[semester] ?? 'blue'}>
+            {semesterLabel[semester] ?? semester}
+          </Badge>
+          {level && <Badge color="gray">Level {level}</Badge>}
+          {paper.year && (
+            <Badge color="green">{paper.year}</Badge>
+          )}
+        </div>
+        {paper.file_type && (
+          <FileTypeIcon fileType={paper.file_type} />
         )}
       </div>
 
@@ -53,7 +80,6 @@ export function PaperCard({ paper }: PaperCardProps) {
 
       {/* Title */}
       <h2 className="mb-3 flex-1 text-base font-semibold leading-snug text-gray-900">
-        {/* Make the whole card tabbable via this link */}
         <Link
           href={`/papers/${paper.id}`}
           className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 after:absolute after:inset-0 after:rounded-xl"

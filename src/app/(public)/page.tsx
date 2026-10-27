@@ -37,9 +37,8 @@ const FilterPanel = dynamicImport(
 )
 
 export const metadata: Metadata = {
-  title: 'Browse Past Questions | Past Questions',
-  description:
-    'Search and download past examination papers by course, level, year, and semester.',
+  title: 'PastQuestions GH — Find Your Past Exam Papers',
+  description: 'Browse and download past examination papers for your university courses.',
 }
 
 // This page is dynamic — search params vary per request.
@@ -129,62 +128,61 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   ].sort()
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Past Questions</h1>
-        <p className="mt-2 text-gray-600">
-          Browse, search, and download past examination papers.
-        </p>
-      </div>
+    <main>
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-brand-primary to-brand-accent py-12 px-4 text-white text-center">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Find Your Past Questions
+          </h1>
+          <p className="mt-3 text-lg text-white/80">
+            Browse and download past exam papers for your university courses
+          </p>
+          {/* Search bar in hero */}
+          <div className="mt-6">
+            <Suspense fallback={<div className="h-11 w-full animate-pulse rounded-lg bg-white/20" />}>
+              <SearchBar />
+            </Suspense>
+          </div>
+        </div>
+      </section>
 
-      {/* Search & filters — client components inside Suspense */}
-      <div className="mb-6 flex flex-col gap-4">
-        <Suspense
-          fallback={
-            <div className="h-11 w-full animate-pulse rounded-lg bg-gray-100" />
-          }
-        >
-          <SearchBar />
+      {/* Filters + results */}
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        {/* Filters */}
+        <div className="mb-6">
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-10 animate-pulse rounded-md bg-gray-100" />
+                ))}
+              </div>
+            }
+          >
+            <FilterPanel programmes={programmes} />
+          </Suspense>
+        </div>
+
+        {/* Results count */}
+        {count !== null && count !== undefined && (
+          <p className="mb-4 text-sm font-medium text-gray-600">
+            {count === 0
+              ? 'No papers found.'
+              : `${count} paper${count !== 1 ? 's' : ''} found — showing ${offset + 1}–${Math.min(offset + per_page, count)}`}
+          </p>
+        )}
+
+        {/* Results */}
+        <Suspense fallback={<PaperList papers={[]} loading />}>
+          <PaperList papers={papers ?? []} />
         </Suspense>
-        <Suspense
-          fallback={
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-10 animate-pulse rounded-md bg-gray-100"
-                />
-              ))}
-            </div>
-          }
-        >
-          <FilterPanel programmes={programmes} />
+
+        {/* Pagination */}
+        <Suspense fallback={null}>
+          <Pagination currentPage={page} totalPages={totalPages} />
         </Suspense>
       </div>
-
-      {/* Results count */}
-      {count !== null && count !== undefined && (
-        <p className="mb-4 text-sm text-gray-500">
-          {count === 0
-            ? 'No papers found.'
-            : `Showing ${offset + 1}–${Math.min(offset + per_page, count)} of ${count} paper${count !== 1 ? 's' : ''}`}
-        </p>
-      )}
-
-      {/* Results */}
-      <Suspense
-        fallback={
-          <PaperList papers={[]} loading />
-        }
-      >
-        <PaperList papers={papers ?? []} />
-      </Suspense>
-
-      {/* Pagination */}
-      <Suspense fallback={null}>
-        <Pagination currentPage={page} totalPages={totalPages} />
-      </Suspense>
     </main>
   )
 }

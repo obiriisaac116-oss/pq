@@ -47,7 +47,13 @@ export function UploadForm({ courses }: UploadFormProps) {
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
+  const [showAddCourse, setShowAddCourse] = useState(false)
+  const [localCourses, setLocalCourses] = useState<CoursesRow[]>(courses)
+  const [newCode, setNewCode] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newProgramme, setNewProgramme] = useState('')
+  const [addingCourse, setAddingCourse] = useState(false)
+  const [addCourseError, setAddCourseError] = useState<string | null>(null)
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0] ?? null
     setFileError(null)
@@ -67,8 +73,35 @@ export function UploadForm({ courses }: UploadFormProps) {
     setFile(picked)
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleAddCourse(e: React.FormEvent) {
     e.preventDefault()
+    setAddingCourse(true)
+    setAddCourseError(null)
+    try {
+      const res = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: newCode.trim(), name: newName.trim(), programme: newProgramme.trim() }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(typeof error === 'string' ? error : 'Failed to create course')
+      }
+      const created: CoursesRow = await res.json()
+      setLocalCourses(prev => [...prev, created].sort((a, b) => a.code.localeCompare(b.code)))
+      setCourseId(created.id)
+      setNewCode('')
+      setNewName('')
+      setNewProgramme('')
+      setShowAddCourse(false)
+    } catch (err) {
+      setAddCourseError(err instanceof Error ? err.message : 'Failed to create course')
+    } finally {
+      setAddingCourse(false)
+    }
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {    e.preventDefault()
     setErrorMessage(null)
 
     if (!file) {
@@ -208,12 +241,48 @@ export function UploadForm({ courses }: UploadFormProps) {
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
         >
           <option value="">— Select a course —</option>
-          {courses.map((c) => (
+          {localCourses.map((c) => (
             <option key={c.id} value={c.id}>
               {c.code} – {c.name}
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => setShowAddCourse(v => !v)}
+          className="mt-1 text-xs text-brand-primary hover:underline"
+        >
+          {showAddCourse ? '— Cancel' : '+ Add new course'}
+        </button>
+        {showAddCourse && (
+          <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2">
+            <p className="text-xs font-medium text-gray-700">New course</p>
+            {addCourseError && <p className="text-xs text-red-600">{addCourseError}</p>}
+            <form onSubmit={handleAddCourse} className="space-y-2">
+              <input
+                type="text" placeholder="Code (e.g. CS101)" required
+                value={newCode} onChange={e => setNewCode(e.target.value)}
+                className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
+              />
+              <input
+                type="text" placeholder="Name (e.g. Intro to CS)" required
+                value={newName} onChange={e => setNewName(e.target.value)}
+                className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
+              />
+              <input
+                type="text" placeholder="Programme (e.g. BSc Computer Science)" required
+                value={newProgramme} onChange={e => setNewProgramme(e.target.value)}
+                className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
+              />
+              <button
+                type="submit" disabled={addingCourse}
+                className="rounded bg-brand-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+              >
+                {addingCourse ? 'Adding…' : 'Add course'}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Level + Year + Semester row */}

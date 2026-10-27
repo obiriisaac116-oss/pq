@@ -1,17 +1,10 @@
 'use client'
 
-// src/components/AdminNav.tsx
-//
-// Persistent navigation bar shown on every admin page.
-// Uses the browser Supabase client for sign-out (client component).
-
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-
 import { createClient } from '@/lib/supabase/client'
 
 const NAV_LINKS = [
-  { href: '/admin', label: 'Dashboard' },
   { href: '/admin/papers', label: 'Papers' },
   { href: '/admin/upload', label: 'Upload' },
   { href: '/admin/messages', label: 'Messages' },
@@ -33,40 +26,60 @@ export function AdminNav() {
       aria-label="Admin navigation"
       className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 shadow-sm"
     >
-      <div className="flex items-center gap-1">
-        <span className="mr-4 text-sm font-bold text-brand-primary">
-          PQ Admin
-        </span>
-        {NAV_LINKS.map(({ href, label }) => {
-          const isActive =
-            href === '/admin'
-              ? pathname === '/admin'
-              : pathname.startsWith(href)
+      <div className="flex items-center gap-4">
+        {/* Logo mark */}
+        <Link href="/admin" className="flex items-center gap-2 text-brand-primary font-bold">
+          <span
+            aria-hidden="true"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-primary text-white text-xs font-black"
+          >
+            PQ
+          </span>
+          <span className="text-sm">Admin</span>
+        </Link>
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={isActive ? 'page' : undefined}
-              className={[
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-brand-primary text-white'
-                  : 'text-gray-600 hover:bg-gray-100',
-              ].join(' ')}
-            >
-              {label}
-            </Link>
-          )
-        })}
+        {/* Divider */}
+        <span aria-hidden="true" className="h-5 w-px bg-gray-200" />
+
+        {/* Nav links */}
+        <div className="flex items-center gap-1">
+          {NAV_LINKS.map(({ href, label }) => {
+            const isActive = pathname.startsWith(href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={isActive ? 'page' : undefined}
+                className={[
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-brand-primary text-white'
+                    : 'text-gray-600 hover:bg-gray-100',
+                ].join(' ')}
+              >
+                {label}
+              </Link>
+            )
+          })}
+        </div>
       </div>
 
-      <button
-        onClick={handleSignOut}
-        className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
-      >
-        Sign out
-      </button>
+      <div className="flex items-center gap-3">
+        <Link
+          href="/"
+          className="text-xs text-gray-400 hover:text-gray-600"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View site ↗
+        </Link>
+        <button
+          onClick={handleSignOut}
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
     </nav>
   )
 }
