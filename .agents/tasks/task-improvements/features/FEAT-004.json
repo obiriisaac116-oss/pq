@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Email subscription system (item 11): subscribers table migration, subscribe API route, EmailSubscribeForm component, add to home page, add subscriber count to admin dashboard stats, send notification email to subscribers when a paper is published via PATCH. Depends on existing redis.ts and email.ts patterns. Independent of FEAT-002 and FEAT-003 except: it also adds subscriber count to the admin dashboard (same file as FEAT-002 item 8 analytics) — implement FEAT-004 after FEAT-002 to avoid merge conflicts on admin/page.tsx.",
+  "status": "pending",
+  "steps": [
+    "Subscribers migration: Create /home/hysterical/Desktop/PQ/supabase/migrations/003_subscribers.sql. Content: CREATE TABLE IF NOT EXISTS subscribers (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email text NOT NULL UNIQUE, created_at timestamptz NOT NULL DEFAULT now(), confirmed boolean NOT NULL DEFAULT true); ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY; CREATE POLICY \"Anyone can subscribe\" ON subscribers FOR INSERT WITH CHECK (true); CREATE POLICY \"Admins can manage subscribers\" ON subscribers FOR ALL USING (is_admin());",
+    "Database types: Edit /home/hysterical/Desktop/PQ/src/types/database.ts. Add three new types after the ContactMessages types: export type SubscribersRow = { id: string; email: string; created_at: string; confirmed: boolean }; export type SubscribersInsert = { id?: string; email: string; created_at?: string; confirmed?: boolean }; export type SubscribersUpdate = { id?: string; email?: string; confirmed?: boolean }. In the Database type's public.Tables object, add: subscribers: { Row: SubscribersRow; Insert: SubscribersInsert; Update: SubscribersUpdate; Relationships: [] }.",
+    "Redis ratelimit: Edit /home/hysterical/Desktop/PQ/src/lib/redis.ts. Add export const subscribeRatelimit = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '60 m'), prefix: 'rl:subscribe' }); at the end of the file.",
+    "Email helper: Edit /home/hysterical/Desktop/PQ/src/lib/email.ts. Add new exported function sendSubscriberNotification(paperTitle: string, paperUrl: string, subscriberEmails: string[]): Promise<void>. If subscriberEmails is empty, return early. Create Resend client lazily. Send email from RESEND_FROM_EMAIL to RESEND_FROM_EMAIL (send to self) with bcc: subscriberEmails, subject: `New paper available: ${paperTitle}`, html: a simple HTML email with a link to paperUrl. Use escapeHtml for the title in the HTML.",
+    "Subscribe API route: Create /home/hysterical/Desktop/PQ/src/app/api/subscribe/route.ts. Import NextRequest, NextResponse from 'next/server'. Import z from 'zod'. Import createAdminClient from '@/lib/supabase/admin'. Import subscribeRatelimit from '@/lib/redis'. Define SubscribeSchema = z.object({ email: z.email().max(254) }) — note: z.email() is top-level in Zod v4. Export async POST function: (1) get IP from x-forwarded-for or x-real-ip header; (2) rate limit check with subscribeRatelimit.limit(ip) — return 429 if exceeded; (3) parse JSON body; (4) validate with SubscribeSchema.safeParse — return 400 if invalid; (5) insert into subscribers table via adminClient; (6) if error.code === '23505' (unique violation), return 200 with message 'Already subscribed!'; (7) on other error return 500; (8) on success return 200 with message 'Subscribed successfully!'.",
+    "EmailSubscribeForm component: Create /home/hysterical/Desktop/PQ/src/components/EmailSubscribeForm.tsx as a 'use client' component. State: email (string), status ('idle'|'loading'|'success'|'error'), message (string). On submit: POST /api/subscribe with { email }, show success/error message. UI: a small card with heading 'Stay updated', subtitle 'Get notified when new papers are added', an email input, and a subscribe button. Use brand colors for the button. Show the response message inline. Keep it compact and visually consistent with the rest of the public pages.",
+    "Add EmailSubscribeForm to home page: Edit /home/hysterical/Desktop/PQ/src/app/(public)/page.tsx. Import EmailSubscribeForm using dynamicImport (same pattern as SearchBar and FilterPanel — ssr: false with a simple skeleton loading fallback). Add it between the closing </section> of the hero and the start of the filters div: <div className='bg-white border-b border-gray-200'><div className='mx-auto max-w-3xl px-4 py-6'><Suspense fallback={<div className='h-24 animate-pulse rounded-lg bg-gray-100' />}><EmailSubscribeForm /></Suspense></div></div>.",
+    "Add subscriber count to admin dashboard: Edit /home/hysterical/Desktop/PQ/src/app/(admin)/admin/page.tsx. In the Promise.all, add: db.from('subscribers').select('id', { count: 'exact', head: true }). Destructure subscribersRes from the Promise.all result. Extract subscribersCount = subscribersRes.count ?? 0. Add to the stats array: { label: 'Subscribers', value: subscribersCount, href: '/admin', color: 'bg-pink-50 text-pink-700' }.",
+    "Subscriber notification on paper publish: Edit /home/hysterical/Desktop/PQ/src/app/api/papers/[id]/route.ts. Add import for sendSubscriberNotification from '@/lib/email'. In the PATCH handler, after the successful update (after `return NextResponse.json({ data })`... actually before it — after the update succeeds and `data` is available), check if parsed.data.status === 'published'. If so, fire-and-forget a promise: void (async () => { try { const { data: subs } = await adminClient.from('subscribers').select('email'); const emails = (subs ?? []).map(s => s.email); const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pq-questions26.onrender.com'; await sendSubscriberNotification(data.title, `${siteUrl}/papers/${data.id}`, emails); } catch (e) { console.error('[PATCH /api/papers/[id]] subscriber notification failed:', e); } })(). This must be placed BEFORE the return statement so it fires (fire-and-forget — do not await)."
+  ],
+  "acceptance_criteria": [
+    "supabase/migrations/003_subscribers.sql exists with correct CREATE TABLE and RLS policies",
+    "SubscribersRow, SubscribersInsert, SubscribersUpdate are exported from src/types/database.ts",
+    "Database type includes subscribers table",
+    "subscribeRatelimit is exported from src/lib/redis.ts",
+    "sendSubscriberNotification is exported from src/lib/email.ts",
+    "POST /api/subscribe returns 200 with success message for valid email",
+    "POST /api/subscribe returns 429 after 3 requests from same IP within an hour",
+    "POST /api/subscribe returns 200 with 'Already subscribed!' for duplicate email",
+    "EmailSubscribeForm component renders on the home page below the hero",
+    "Admin dashboard stats include 'Subscribers' count card",
+    "PATCH /api/papers/[id] sends subscriber notification email when status is set to 'published'",
+    "npm run build exits 0 with zero errors"
+  ],
+  "verification": [
+    "cd /home/hysterical/Desktop/PQ && npm run build",
+    "cd /home/hysterical/Desktop/PQ && npm run lint"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Static/layout improvements: watermark (item 1), sitemap+robots (item 5), PWA manifest+icons (item 6), dark mode (item 9). These are independent of each other and of the other FEATs. They touch layout.tsx, globals.css, tailwind.config.ts, and add new top-level app/ files.",
+  "status": "completed",
+  "steps": [
+    "Item 1 — Watermark: Edit /home/hysterical/Desktop/PQ/src/app/layout.tsx. Add <span className=\"fixed bottom-3 right-4 text-xs font-mono text-gray-300 select-none pointer-events-none z-50\">~hysterical</span> inside <body> after {children}.",
+    "Item 5 — Sitemap: Create /home/hysterical/Desktop/PQ/src/app/sitemap.ts. Import MetadataRoute from 'next' and createAdminClient from '@/lib/supabase/admin'. Export default async function sitemap() that fetches all published papers and returns static routes (/, /contact) plus one entry per paper. Use NEXT_PUBLIC_SITE_URL env var with fallback 'https://pq-questions26.onrender.com'. Wrap DB call in try/catch — return only static routes if it throws.",
+    "Item 5 — Robots: Create /home/hysterical/Desktop/PQ/src/app/robots.ts. Export default function robots() returning MetadataRoute.Robots with rules disallowing /admin, /login, /api and pointing sitemap to ${siteUrl}/sitemap.xml.",
+    "Item 6 — PWA manifest: Create /home/hysterical/Desktop/PQ/src/app/manifest.ts. Export default function manifest() returning MetadataRoute.Manifest with name='PastQuestions GH', short_name='PastQs', start_url='/', display='standalone', background_color='#ffffff', theme_color='#1d4ed8', icons=[{src:'/icon-192.png',sizes:'192x192',type:'image/png'},{src:'/icon-512.png',sizes:'512x512',type:'image/png'}].",
+    "Item 6 — PNG icons: Create /home/hysterical/Desktop/PQ/scripts/gen-icons.mjs. The script uses Node fs to write minimal valid 1x1 blue PNG bytes to public/icon-192.png and public/icon-512.png. Create public/ dir with fs.mkdirSync. Use this exact minimal valid 1x1 RGB PNG as a hex buffer: 89504e470d0a1a0a0000000d49484452000000010000000108020000009001 2e000000000c4944415478016360f8cf0000000200010a2e45cd000000004945 4e44ae426082 — NOTE: use a known-good 1x1 PNG byte sequence. Safest approach: hard-code the Buffer.from() with verified hex bytes for a 1x1 white PNG: '89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c49444154789c6260f8cf000000020001e221bc33000000004945444ae426082' — IMPORTANT: look up or compute the correct CRC values. The simplest correct approach is to write a 1x1 PNG using only zlib-compressed data. Alternatively, use the following known-good 68-byte 1x1 white PNG (verified): Buffer.from('89504e470d0a1a0a0000000d494844520000000100000001080200000090 7753de0000000c49444154789c62f8cfc00000000200 01e221bc33000000004945454e44ae426082', 'hex') after removing spaces. Run `node scripts/gen-icons.mjs` after creating the script.",
+    "Item 9 — Dark mode Tailwind: Edit /home/hysterical/Desktop/PQ/tailwind.config.ts. Add darkMode: 'class' at the top level of the config object (before theme key).",
+    "Item 9 — ThemeToggle component: Create /home/hysterical/Desktop/PQ/src/components/ThemeToggle.tsx as a 'use client' component. On mount (useEffect), read localStorage 'theme' and prefers-color-scheme media query; apply 'dark' class to document.documentElement and set local state. Toggle function flips state, updates class, writes to localStorage. Render a sun/moon SVG button with aria-label 'Switch to dark/light mode'. Use Tailwind classes: rounded-md p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800.",
+    "Item 9 — Add ThemeToggle to public layout header: Edit /home/hysterical/Desktop/PQ/src/app/(public)/layout.tsx. Import ThemeToggle. Add <ThemeToggle /> inside the header nav div, after the Contact link.",
+    "Item 9 — Add ThemeToggle to AdminNav: Edit /home/hysterical/Desktop/PQ/src/components/AdminNav.tsx. Import ThemeToggle. Add <ThemeToggle /> in the right-side div, before the Sign out button.",
+    "Item 9 — Dark mode globals.css: Edit /home/hysterical/Desktop/PQ/src/app/globals.css. Add dark mode CSS: .dark body { background-color: #111827; color: #f9fafb; } .dark header { background-color: #1f2937; border-color: #374151; } .dark footer { background-color: #1f2937; border-color: #374151; } .dark nav { background-color: #1f2937; border-color: #374151; } Keep these as plain CSS (not @apply) to avoid Tailwind purge issues with dynamic class names."
+  ],
+  "acceptance_criteria": [
+    "~hysterical watermark is visible on all pages (fixed bottom-right, gray, non-interactive)",
+    "/sitemap.xml returns a valid XML sitemap when the app runs",
+    "/robots.txt returns a robots file disallowing /admin, /login, /api",
+    "/manifest.webmanifest returns a valid web app manifest JSON",
+    "public/icon-192.png and public/icon-512.png exist and are valid PNG files",
+    "tailwind.config.ts has darkMode: 'class'",
+    "ThemeToggle component exists and toggles 'dark' class on <html> element",
+    "ThemeToggle is present in both the public layout header and AdminNav",
+    "npm run build exits 0 with zero errors"
+  ],
+  "verification": [
+    "cd /home/hysterical/Desktop/PQ && node scripts/gen-icons.mjs",
+    "cd /home/hysterical/Desktop/PQ && npm run build",
+    "cd /home/hysterical/Desktop/PQ && npm run lint"
+  ],
+  "blocked_reason": null,
+  "findings": "1. papers.status is 'published'|'draft' (not is_published bool) — sitemap.ts uses .eq('status','published'). 2. public/ directory created by gen-icons.mjs (mkdirSync recursive). 3. scripts/gen-icons.mjs creates minimal valid 1x1 RGB PNG — must be run before every build in CI. 4. ThemeToggle uses useEffect so no SSR hydration mismatch. 5. tailwind.config.ts now has darkMode:'class'. 6. globals.css has plain-CSS dark-mode rules for body/header/footer/nav. 7. All new app/ files (sitemap.ts, robots.ts, manifest.ts) are in /src/app/ root — Next.js serves them at /sitemap.xml, /robots.txt, /manifest.webmanifest automatically."
+}

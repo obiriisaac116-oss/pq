@@ -13,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <span className="fixed bottom-3 right-4 text-xs font-mono text-gray-300 select-none pointer-events-none z-50">~hysterical</span>
+      </body>
     </html>
   )
 }

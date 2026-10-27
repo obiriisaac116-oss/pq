@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '+233592342667'
@@ -35,6 +36,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
             >
               Contact
             </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>

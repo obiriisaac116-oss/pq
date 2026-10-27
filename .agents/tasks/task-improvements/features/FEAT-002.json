@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Admin functionality: course management page (item 2), paper edit (item 7), analytics dashboard (item 8). These are all admin-only changes and build on the existing admin infrastructure. FEAT-001 must complete first (ThemeToggle is added to AdminNav there). These items are independent of FEAT-003 (public-facing) and FEAT-004 (email subscription).",
+  "status": "pending",
+  "steps": [
+    "Item 2 — Courses API [id] route: Create /home/hysterical/Desktop/PQ/src/app/api/courses/[id]/route.ts with PATCH and DELETE handlers. Use the same requireAdmin pattern from /home/hysterical/Desktop/PQ/src/app/api/papers/[id]/route.ts: import createClient from @/lib/supabase/server and createAdminClient from @/lib/supabase/admin. PATCH: parse body with z.object({ code: z.string().min(1).max(20).optional(), name: z.string().min(2).max(200).optional(), programme: z.string().min(2).max(200).nullable().optional() }), update via adminClient, return updated row. DELETE: fetch course first, delete record, return 204. Return 401/403 if not admin, 404 if not found.",
+    "Item 2 — CoursesTable client component: Create /home/hysterical/Desktop/PQ/src/components/CoursesTable.tsx as a 'use client' component. Props: initialCourses: CoursesRow[]. State: courses (array), editingId (string|null), editFields ({code,name,programme}). Render a table with columns: Code, Name, Programme, Created (formatted date), Actions. When editingId matches a row, render input fields for code/name/programme (programme is string|null — show '' when null, send null when cleared). Save calls PATCH /api/courses/[id], updates local state. Delete calls DELETE /api/courses/[id] with window.confirm, removes from local state. Handle errors inline.",
+    "Item 2 — Courses admin page: Create /home/hysterical/Desktop/PQ/src/app/(admin)/admin/courses/page.tsx as a server component with export const dynamic = 'force-dynamic'. Belt-and-suspenders admin check (createClient -> auth.getUser -> redirect if not logged in). Fetch all courses via createAdminClient ordered by code. Render <AdminNav /> + <main> with heading 'Courses' + <CoursesTable initialCourses={courses ?? []} />.",
+    "Item 2 — Add Courses nav link: Edit /home/hysterical/Desktop/PQ/src/components/AdminNav.tsx. Add { href: '/admin/courses', label: 'Courses' } to the NAV_LINKS const array (between 'Papers' and 'Upload' makes logical sense, or after 'Upload' — place it after 'Upload' and before 'Messages').",
+    "Item 7 — Upload page edit mode: Edit /home/hysterical/Desktop/PQ/src/app/(admin)/admin/upload/page.tsx. Add interface UploadPageProps { searchParams: { edit?: string } }. Add parameter to the default export function. Import PapersRow and CoursesRow from @/types/database. After loading courses, if searchParams.edit is set, fetch that paper via adminClient (.from('papers').select('*, courses(*)').eq('id', searchParams.edit).maybeSingle()). Assign to editPaper variable. Pass editPaper to <UploadForm courses={courses ?? []} editPaper={editPaper} />. Change page h1 to show 'Edit paper' when editPaper is present, otherwise 'Upload paper'.",
+    "Item 7 — UploadForm edit mode: Edit /home/hysterical/Desktop/PQ/src/components/UploadForm.tsx. Import PapersRow from @/types/database. Extend UploadFormProps: add editPaper?: (PapersRow & { courses: CoursesRow | null }) | null. Change useState initial values to read from editPaper when present: title uses editPaper?.title ?? '', courseId uses editPaper?.course_id ?? '', level uses editPaper?.level ?? '100', year uses editPaper?.year ? String(editPaper.year) : String(new Date().getFullYear()), semester uses editPaper?.semester ?? 'first'. In edit mode, file input gets required={!editPaper}; add helper text 'Leave blank to keep existing file' when editPaper is present. In handleSubmit: if editPaper is set AND no new file is selected, skip presign+upload and PATCH /api/papers/${editPaper.id} with only the metadata fields. If a new file IS selected, do full presign+upload+PATCH with the new file_path and file_type. Add a heading inside the form when editing: <p className='mb-4 text-sm font-medium text-blue-700 bg-blue-50 rounded px-3 py-2'>Editing: {editPaper.title}</p>.",
+    "Item 8 — Analytics queries: Edit /home/hysterical/Desktop/PQ/src/app/(admin)/admin/page.tsx. Extend the Promise.all to add two more queries: (4) db.from('papers').select('id, title, downloads, courses(code, name)').order('downloads', { ascending: false }).limit(10), and (5) db.from('papers').select('id, title, status, created_at').order('created_at', { ascending: false }).limit(5). Destructure topPapersRes and recentPapersRes from the result array. Extract topPapers and recentPapers from their .data properties.",
+    "Item 8 — Analytics UI: In the same admin page, after the existing quick-action buttons div, add two sections. Section 1 'Top papers by downloads': a responsive table with columns #, Title, Course, Downloads. Map topPapers — cast (p.courses as CoursesRow | null) for the course code. Section 2 'Recent uploads': an unordered list showing title + status badge (green for published, yellow for draft). Import CoursesRow type from @/types/database if not already imported."
+  ],
+  "acceptance_criteria": [
+    "GET /api/courses/[id] does not exist (no GET needed — existing GET on /api/courses returns all)",
+    "PATCH /api/courses/[id] updates a course when called by an admin",
+    "DELETE /api/courses/[id] deletes a course when called by an admin",
+    "/admin/courses page renders a table of courses with inline edit and delete",
+    "AdminNav shows a 'Courses' link that navigates to /admin/courses",
+    "Visiting /admin/upload?edit=[id] pre-fills the form with the paper's values",
+    "Submitting the edit form sends PATCH /api/papers/[id] (not POST)",
+    "Admin dashboard shows 'Top papers by downloads' table and 'Recent uploads' list",
+    "npm run build exits 0 with zero errors"
+  ],
+  "verification": [
+    "cd /home/hysterical/Desktop/PQ && npm run build",
+    "cd /home/hysterical/Desktop/PQ && npm run lint"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
