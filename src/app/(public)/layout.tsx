@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { ReactNode } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
@@ -15,12 +16,13 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
             href="/"
             className="flex items-center gap-2 text-brand-primary font-bold text-lg hover:opacity-80"
           >
-            <span
-              aria-hidden="true"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary text-white text-sm font-black"
-            >
-              PQ
-            </span>
+            <Image
+              src="/ttu-logo.jpg"
+              alt="TTU"
+              width={32}
+              height={32}
+              className="rounded-md object-cover"
+            />
             PastQuestions GH
           </Link>
           <nav aria-label="Main navigation" className="flex items-center gap-1">
@@ -52,8 +54,11 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
             {/* Brand */}
             <div>
-              <p className="text-base font-bold text-brand-primary">PastQuestions GH</p>
-              <p className="mt-1 text-sm text-gray-500">Your one-stop source for past exam papers.</p>
+              <div className="flex items-center gap-2 mb-1">
+                <Image src="/ttu-logo.jpg" alt="TTU" width={32} height={32} className="rounded-md object-cover" />
+                <p className="text-base font-bold text-brand-primary">PastQuestions GH</p>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">Past exam papers for Takoradi Technical University students.</p>
             </div>
             {/* Quick links */}
             <div>

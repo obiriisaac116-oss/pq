@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import dynamicImport from 'next/dynamic'
+import Image from 'next/image'
 import { Suspense } from 'react'
 
 import { createClient } from '@/lib/supabase/server'
@@ -140,19 +141,36 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <main>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-brand-primary to-brand-accent py-12 px-4 text-white text-center">
-        <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Find Your Past Questions
-          </h1>
-          <p className="mt-3 text-lg text-white/80">
-            Browse and download past exam papers for your university courses
-          </p>
-          {/* Search bar in hero */}
-          <div className="mt-6">
-            <Suspense fallback={<div className="h-11 w-full animate-pulse rounded-lg bg-white/20" />}>
-              <SearchBar />
-            </Suspense>
+      <section className="bg-gradient-to-br from-brand-primary to-brand-accent py-12 px-4 text-white">
+        <div className="mx-auto max-w-5xl flex flex-col sm:flex-row items-center gap-8">
+          {/* TTU Logo */}
+          <div className="flex-shrink-0">
+            <Image
+              src="/ttu-logo.jpg"
+              alt="Takoradi Technical University 70th Anniversary"
+              width={160}
+              height={216}
+              className="rounded-xl shadow-lg border-2 border-white/30"
+              priority
+            />
+          </div>
+          {/* Text + search */}
+          <div className="flex-1 text-center sm:text-left">
+            <p className="text-sm font-semibold uppercase tracking-widest text-white/70 mb-2">
+              Takoradi Technical University
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              Find Your Past Questions
+            </h1>
+            <p className="mt-3 text-lg text-white/80">
+              Browse and download past exam papers for your TTU courses
+            </p>
+            {/* Search bar in hero */}
+            <div className="mt-6">
+              <Suspense fallback={<div className="h-11 w-full animate-pulse rounded-lg bg-white/20" />}>
+                <SearchBar />
+              </Suspense>
+            </div>
           </div>
         </div>
       </section>
