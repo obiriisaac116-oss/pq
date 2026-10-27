@@ -2,24 +2,30 @@
 
 // src/components/UploadForm.tsx
 //
-// Multi-step upload form for admin users.
+// Multi-step upload / edit form for admin users.
 //
-// Flow:
+// Upload flow:
 //   1. Admin fills metadata (title, course, level, year, semester).
 //   2. Admin picks a file (PDF / JPG / PNG, ≤ 10 MB) — client validates.
 //   3. On submit:
 //      a. POST /api/upload/presign  → { signedUrl, token, path }
 //      b. PUT signedUrl  (direct upload to Supabase Storage, progress tracked)
 //      c. POST /api/papers  → create paper record with file_path
-//   4. Success / error state shown inline.
+//
+// Edit flow (editPaper prop set):
+//   - Form fields are pre-filled from the existing paper.
+//   - File input is optional — leaving it blank keeps the existing file.
+//   - On submit with no new file: PATCH /api/papers/[id] with metadata only.
+//   - On submit with a new file: full presign+upload+PATCH.
 
 import { useState, useRef, ChangeEvent, FormEvent } from 'react'
 
 import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/validations'
-import type { CoursesRow } from '@/types/database'
+import type { CoursesRow, PapersRow } from '@/types/database'
 
 type UploadFormProps = {
   courses: CoursesRow[]
+  editPaper?: (PapersRow & { courses: CoursesRow | null }) | null
 }
 
 type FormState = 'idle' | 'uploading' | 'saving' | 'success' | 'error'
@@ -35,12 +41,14 @@ function mimeToFileType(mime: string): 'pdf' | 'jpg' | 'png' {
   return 'png'
 }
 
-export function UploadForm({ courses }: UploadFormProps) {
-  const [title, setTitle] = useState('')
-  const [courseId, setCourseId] = useState('')
-  const [level, setLevel] = useState<string>('100')
-  const [year, setYear] = useState<string>(String(new Date().getFullYear()))
-  const [semester, setSemester] = useState<string>('first')
+export function UploadForm({ courses, editPaper }: UploadFormProps) {
+  const [title, setTitle] = useState(editPaper?.title ?? '')
+  const [courseId, setCourseId] = useState(editPaper?.course_id ?? '')
+  const [level, setLevel] = useState<string>(editPaper?.level ?? '100')
+  const [year, setYear] = useState<string>(
+    editPaper?.year ? String(editPaper.year) : String(new Date().getFullYear()),
+  )
+  const [semester, setSemester] = useState<string>(editPaper?.semester ?? 'first')
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
@@ -54,6 +62,7 @@ export function UploadForm({ courses }: UploadFormProps) {
   const [newProgramme, setNewProgramme] = useState('')
   const [addingCourse, setAddingCourse] = useState(false)
   const [addCourseError, setAddCourseError] = useState<string | null>(null)
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0] ?? null
     setFileError(null)
@@ -81,14 +90,20 @@ export function UploadForm({ courses }: UploadFormProps) {
       const res = await fetch('/api/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: newCode.trim(), name: newName.trim(), programme: newProgramme.trim() }),
+        body: JSON.stringify({
+          code: newCode.trim(),
+          name: newName.trim(),
+          programme: newProgramme.trim(),
+        }),
       })
       if (!res.ok) {
         const { error } = await res.json()
         throw new Error(typeof error === 'string' ? error : 'Failed to create course')
       }
       const created: CoursesRow = await res.json()
-      setLocalCourses(prev => [...prev, created].sort((a, b) => a.code.localeCompare(b.code)))
+      setLocalCourses((prev) =>
+        [...prev, created].sort((a, b) => a.code.localeCompare(b.code)),
+      )
       setCourseId(created.id)
       setNewCode('')
       setNewName('')
@@ -101,10 +116,12 @@ export function UploadForm({ courses }: UploadFormProps) {
     }
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {    e.preventDefault()
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setErrorMessage(null)
 
-    if (!file) {
+    // In upload (non-edit) mode, a file is required.
+    if (!editPaper && !file) {
       setFileError('Please select a file.')
       return
     }
@@ -113,64 +130,138 @@ export function UploadForm({ courses }: UploadFormProps) {
     setProgress(0)
 
     try {
-      // ── Step 1: get presigned upload URL ───────────────────────────────
-      const presignRes = await fetch('/api/upload/presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          size: file.size,
-        }),
-      })
+      if (editPaper) {
+        // ── Edit mode ────────────────────────────────────────────────────────
+        if (file) {
+          // New file selected — presign + upload, then PATCH with new file path.
+          const presignRes = await fetch('/api/upload/presign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              contentType: file.type,
+              size: file.size,
+            }),
+          })
 
-      if (!presignRes.ok) {
-        const { error } = (await presignRes.json()) as { error: string }
-        throw new Error(error ?? 'Could not get upload URL.')
-      }
+          if (!presignRes.ok) {
+            const { error } = (await presignRes.json()) as { error: string }
+            throw new Error(error ?? 'Could not get upload URL.')
+          }
 
-      const { signedUrl, path } = (await presignRes.json()) as {
-        signedUrl: string
-        token: string
-        path: string
-      }
+          const { signedUrl, path } = (await presignRes.json()) as {
+            signedUrl: string
+            token: string
+            path: string
+          }
 
-      // ── Step 2: upload file directly to Supabase Storage ──────────────
-      await uploadWithProgress(signedUrl, file, (pct) => setProgress(pct))
+          await uploadWithProgress(signedUrl, file, (pct) => setProgress(pct))
+          setFormState('saving')
 
-      // ── Step 3: create the paper record ───────────────────────────────
-      setFormState('saving')
+          const patchRes = await fetch(`/api/papers/${editPaper.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: title.trim(),
+              course_id: courseId || null,
+              year: Number(year),
+              semester,
+              level,
+              file_path: path,
+              file_type: mimeToFileType(file.type),
+            }),
+          })
 
-      const paperRes = await fetch('/api/papers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          course_id: courseId,
-          year: Number(year),
-          semester,
-          level: Number(level),
-          file_path: path,
-          file_type: mimeToFileType(file.type),
-          status: 'draft',
-        }),
-      })
+          if (!patchRes.ok) {
+            const { error } = (await patchRes.json()) as { error: string }
+            throw new Error(error ?? 'Failed to update paper record.')
+          }
+        } else {
+          // No new file — metadata-only PATCH.
+          setFormState('saving')
 
-      if (!paperRes.ok) {
-        const { error } = (await paperRes.json()) as { error: string }
-        throw new Error(error ?? 'Failed to save paper record.')
+          const patchRes = await fetch(`/api/papers/${editPaper.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: title.trim(),
+              course_id: courseId || null,
+              year: Number(year),
+              semester,
+              level,
+            }),
+          })
+
+          if (!patchRes.ok) {
+            const { error } = (await patchRes.json()) as { error: string }
+            throw new Error(error ?? 'Failed to update paper record.')
+          }
+        }
+      } else {
+        // ── Upload mode ──────────────────────────────────────────────────────
+        // file is guaranteed to be non-null here (checked above).
+        const uploadFile = file!
+
+        // Step 1: get presigned upload URL.
+        const presignRes = await fetch('/api/upload/presign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: uploadFile.name,
+            contentType: uploadFile.type,
+            size: uploadFile.size,
+          }),
+        })
+
+        if (!presignRes.ok) {
+          const { error } = (await presignRes.json()) as { error: string }
+          throw new Error(error ?? 'Could not get upload URL.')
+        }
+
+        const { signedUrl, path } = (await presignRes.json()) as {
+          signedUrl: string
+          token: string
+          path: string
+        }
+
+        // Step 2: upload file directly to Supabase Storage.
+        await uploadWithProgress(signedUrl, uploadFile, (pct) => setProgress(pct))
+
+        // Step 3: create the paper record.
+        setFormState('saving')
+
+        const paperRes = await fetch('/api/papers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title.trim(),
+            course_id: courseId,
+            year: Number(year),
+            semester,
+            level: Number(level),
+            file_path: path,
+            file_type: mimeToFileType(uploadFile.type),
+            status: 'draft',
+          }),
+        })
+
+        if (!paperRes.ok) {
+          const { error } = (await paperRes.json()) as { error: string }
+          throw new Error(error ?? 'Failed to save paper record.')
+        }
+
+        // Reset form after successful upload.
+        setTitle('')
+        setCourseId('')
+        setLevel('100')
+        setYear(String(new Date().getFullYear()))
+        setSemester('first')
+        setFile(null)
+        setProgress(0)
+        if (fileInputRef.current) fileInputRef.current.value = ''
       }
 
       setFormState('success')
-      // Reset form
-      setTitle('')
-      setCourseId('')
-      setLevel('100')
-      setYear(String(new Date().getFullYear()))
-      setSemester('first')
-      setFile(null)
-      setProgress(0)
-      if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Upload failed.')
       setFormState('error')
@@ -181,14 +272,22 @@ export function UploadForm({ courses }: UploadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      {/* Edit-mode banner */}
+      {editPaper && (
+        <p className="mb-4 rounded bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+          Editing: {editPaper.title}
+        </p>
+      )}
+
       {formState === 'success' && (
         <div
           role="status"
           aria-live="polite"
           className="rounded-md bg-green-50 p-4 text-sm text-green-800"
         >
-          Paper uploaded successfully and saved as draft. You can publish it
-          from the Papers page.
+          {editPaper
+            ? 'Paper updated successfully.'
+            : 'Paper uploaded successfully and saved as draft. You can publish it from the Papers page.'}
         </div>
       )}
 
@@ -204,10 +303,7 @@ export function UploadForm({ courses }: UploadFormProps) {
 
       {/* Title */}
       <div>
-        <label
-          htmlFor="title"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           Title <span aria-hidden="true">*</span>
         </label>
         <input
@@ -226,10 +322,7 @@ export function UploadForm({ courses }: UploadFormProps) {
 
       {/* Course */}
       <div>
-        <label
-          htmlFor="course_id"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="course_id" className="block text-sm font-medium text-gray-700">
           Course <span aria-hidden="true">*</span>
         </label>
         <select
@@ -249,7 +342,7 @@ export function UploadForm({ courses }: UploadFormProps) {
         </select>
         <button
           type="button"
-          onClick={() => setShowAddCourse(v => !v)}
+          onClick={() => setShowAddCourse((v) => !v)}
           className="mt-1 text-xs text-brand-primary hover:underline"
         >
           {showAddCourse ? '— Cancel' : '+ Add new course'}
@@ -257,25 +350,37 @@ export function UploadForm({ courses }: UploadFormProps) {
         {showAddCourse && (
           <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2">
             <p className="text-xs font-medium text-gray-700">New course</p>
-            {addCourseError && <p className="text-xs text-red-600">{addCourseError}</p>}
+            {addCourseError && (
+              <p className="text-xs text-red-600">{addCourseError}</p>
+            )}
             <form onSubmit={handleAddCourse} className="space-y-2">
               <input
-                type="text" placeholder="Code (e.g. CS101)" required
-                value={newCode} onChange={e => setNewCode(e.target.value)}
+                type="text"
+                placeholder="Code (e.g. CS101)"
+                required
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value)}
                 className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
               />
               <input
-                type="text" placeholder="Name (e.g. Intro to CS)" required
-                value={newName} onChange={e => setNewName(e.target.value)}
+                type="text"
+                placeholder="Name (e.g. Intro to CS)"
+                required
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
                 className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
               />
               <input
-                type="text" placeholder="Programme (e.g. BSc Computer Science)" required
-                value={newProgramme} onChange={e => setNewProgramme(e.target.value)}
+                type="text"
+                placeholder="Programme (e.g. BSc Computer Science)"
+                required
+                value={newProgramme}
+                onChange={(e) => setNewProgramme(e.target.value)}
                 className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
               />
               <button
-                type="submit" disabled={addingCourse}
+                type="submit"
+                disabled={addingCourse}
                 className="rounded bg-brand-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
               >
                 {addingCourse ? 'Adding…' : 'Add course'}
@@ -288,10 +393,7 @@ export function UploadForm({ courses }: UploadFormProps) {
       {/* Level + Year + Semester row */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label
-            htmlFor="level"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="level" className="block text-sm font-medium text-gray-700">
             Level <span aria-hidden="true">*</span>
           </label>
           <select
@@ -311,10 +413,7 @@ export function UploadForm({ courses }: UploadFormProps) {
         </div>
 
         <div>
-          <label
-            htmlFor="year"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="year" className="block text-sm font-medium text-gray-700">
             Year <span aria-hidden="true">*</span>
           </label>
           <input
@@ -331,10 +430,7 @@ export function UploadForm({ courses }: UploadFormProps) {
         </div>
 
         <div>
-          <label
-            htmlFor="semester"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="semester" className="block text-sm font-medium text-gray-700">
             Semester <span aria-hidden="true">*</span>
           </label>
           <select
@@ -356,22 +452,24 @@ export function UploadForm({ courses }: UploadFormProps) {
 
       {/* File */}
       <div>
-        <label
-          htmlFor="file"
-          className="block text-sm font-medium text-gray-700"
-        >
-          File (PDF, JPG, PNG — max 10 MB) <span aria-hidden="true">*</span>
+        <label htmlFor="file" className="block text-sm font-medium text-gray-700">
+          File (PDF, JPG, PNG — max 10 MB){' '}
+          {!editPaper && <span aria-hidden="true">*</span>}
         </label>
         <input
           ref={fileInputRef}
           id="file"
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+          required={!editPaper}
           onChange={handleFileChange}
           disabled={isSubmitting}
           aria-describedby={fileError ? 'file-error' : undefined}
           className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border file:border-gray-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50 disabled:opacity-60"
         />
+        {editPaper && (
+          <p className="mt-1 text-xs text-gray-500">Leave blank to keep the existing file.</p>
+        )}
         {fileError && (
           <p id="file-error" role="alert" className="mt-1 text-sm text-red-600">
             {fileError}
@@ -408,7 +506,7 @@ export function UploadForm({ courses }: UploadFormProps) {
 
       <button
         type="submit"
-        disabled={isSubmitting || !file}
+        disabled={isSubmitting || (!editPaper && !file)}
         className="flex w-full items-center justify-center rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-primary/90 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? (
@@ -418,6 +516,8 @@ export function UploadForm({ courses }: UploadFormProps) {
               {formState === 'uploading' ? 'Uploading…' : 'Saving…'}
             </span>
           </>
+        ) : editPaper ? (
+          'Save changes'
         ) : (
           'Upload paper'
         )}
@@ -441,9 +541,6 @@ function Spinner() {
 
 /**
  * Upload a file to a presigned URL and report progress via XHR.
- * Supabase Storage's `uploadToSignedUrl` endpoint expects a PUT with the raw
- * file body (not multipart) when the body is not a Blob/FormData that triggers
- * the prepareUploadFormData path. We use the plain signedUrl directly here.
  */
 async function uploadWithProgress(
   signedUrl: string,

@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 const NAV_LINKS = [
   { href: '/admin/papers', label: 'Papers' },
   { href: '/admin/upload', label: 'Upload' },
+  { href: '/admin/courses', label: 'Courses' },
   { href: '/admin/messages', label: 'Messages' },
 ] as const
 
