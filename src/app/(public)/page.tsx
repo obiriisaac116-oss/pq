@@ -47,6 +47,16 @@ const EmailSubscribeForm = dynamicImport(
   },
 )
 
+const RecentlyViewedWrapper = dynamicImport(
+  () => import('@/components/RecentlyViewedWrapper'),
+  { ssr: false },
+)
+
+const StickySearchWrapper = dynamicImport(
+  () => import('@/components/StickySearchWrapper'),
+  { ssr: false },
+)
+
 export const metadata: Metadata = {
   title: 'PastQuestions GH — Find Your Past Exam Papers',
   description: 'Browse and download past examination papers for your university courses.',
@@ -78,6 +88,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const offset = (page - 1) * per_page
 
   const supabase = await createClient()
+
+  // Fetch total published paper count for the hero counter.
+  const { count: paperCount } = await supabase
+    .from('papers')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'published')
 
   // When programme or course_code filters are active, resolve matching course
   // IDs first.  PostgREST dot-notation filters on embedded relations are
@@ -165,6 +181,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <p className="mt-3 text-lg text-white/80">
               Browse and download past exam papers for your TTU courses
             </p>
+            <p className="mt-2 text-2xl font-bold text-white">
+              {(paperCount ?? 0).toLocaleString()}+ past papers available
+            </p>
             {/* Search bar in hero */}
             <div className="mt-6">
               <Suspense fallback={<div className="h-11 w-full animate-pulse rounded-lg bg-white/20" />}>
@@ -174,6 +193,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         </div>
       </section>
+
+      {/* Sticky search bar — appears when hero scrolls out of view */}
+      <Suspense fallback={null}>
+        <StickySearchWrapper />
+      </Suspense>
 
       {/* Email subscription */}
       <div className="bg-white border-b border-gray-200">
@@ -186,6 +210,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       {/* Filters + results */}
       <div className="mx-auto max-w-7xl px-4 py-8">
+        {/* Recently viewed papers */}
+        <Suspense fallback={null}>
+          <RecentlyViewedWrapper />
+        </Suspense>
+
         {/* Filters */}
         <div className="mb-6">
           <Suspense

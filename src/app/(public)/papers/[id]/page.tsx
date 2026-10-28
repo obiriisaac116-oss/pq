@@ -5,8 +5,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/Badge'
+import { PaperCard } from '@/components/PaperCard'
 import { DownloadButton } from './DownloadButton'
+import { ActionButtons } from './ActionButtons'
+import { SaveToHistory } from './SaveToHistory'
 import type { PapersRow, CoursesRow } from '@/types/database'
+import type { PaperWithCoursePublic } from '@/components/PaperCard'
 
 type PaperWithCourse = PapersRow & { courses: CoursesRow | null }
 
@@ -58,6 +62,20 @@ export default async function PaperPage({ params }: PaperPageProps) {
     notFound()
   }
 
+  // Fetch related papers from the same course (excluding current).
+  const relatedPapers: PaperWithCoursePublic[] = []
+  if (paper.course_id) {
+    const { data: related } = await supabase
+      .from('papers')
+      .select<'*, courses(*)', PaperWithCoursePublic>('*, courses(*)')
+      .eq('status', 'published')
+      .eq('course_id', paper.course_id)
+      .neq('id', paper.id)
+      .order('created_at', { ascending: false })
+      .limit(4)
+    if (related) relatedPapers.push(...related)
+  }
+
   // Generate a signed URL for preview (1 hour expiry).
   const adminDb = createAdminClient()
   const { data: signedUrlData } = await adminDb.storage
@@ -87,6 +105,8 @@ export default async function PaperPage({ params }: PaperPageProps) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
+      {/* Save this paper to localStorage history (client-side, no visible output) */}
+      <SaveToHistory paperId={paper.id} />
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
         <ol className="flex flex-wrap items-center gap-1">
@@ -96,7 +116,7 @@ export default async function PaperPage({ params }: PaperPageProps) {
             </Link>
           </li>
           <li aria-hidden className="select-none">
-            /
+            ›
           </li>
           {course && (
             <>
@@ -109,7 +129,7 @@ export default async function PaperPage({ params }: PaperPageProps) {
                 </Link>
               </li>
               <li aria-hidden className="select-none">
-                /
+                ›
               </li>
             </>
           )}
@@ -117,7 +137,7 @@ export default async function PaperPage({ params }: PaperPageProps) {
             aria-current="page"
             className="max-w-[200px] truncate font-medium text-gray-800"
           >
-            {paper.title}
+            {paper.title.length > 40 ? paper.title.slice(0, 40) + '…' : paper.title}
           </li>
         </ol>
       </nav>
@@ -202,6 +222,9 @@ export default async function PaperPage({ params }: PaperPageProps) {
         {/* Download */}
         <DownloadButton paperId={paper.id} />
 
+        {/* Copy link + Print */}
+        <ActionButtons />
+
         {/* WhatsApp share */}
         <a
           href={`https://wa.me/?text=${encodeURIComponent(`Check out this past question: ${paper.title} ${siteUrl}/papers/${paper.id}`)}`}
@@ -215,6 +238,20 @@ export default async function PaperPage({ params }: PaperPageProps) {
           Share on WhatsApp
         </a>
       </div>
+
+      {/* Related papers from same course */}
+      {relatedPapers && relatedPapers.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-4 text-lg font-bold text-gray-900">
+            More from {course?.code ?? 'this course'}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {relatedPapers.map((p) => (
+              <PaperCard key={p.id} paper={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   )
 }

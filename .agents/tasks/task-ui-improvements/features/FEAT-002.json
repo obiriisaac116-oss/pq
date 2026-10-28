@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Public UI improvements: items 1–10 and 18. These all touch public-facing components and pages. They are independent of the admin changes in FEAT-003 and can be done in any order relative to it, but must come after FEAT-001 (dark mode removal) to avoid reintroducing dark: classes. Covers: hero section redesign with animated paper count (#1), PaperCard hover tooltip + trending badge + prefetch (#2, #10, #18), PaperList empty state + skeleton (#4, #5), paper detail page breadcrumb + print/copy/share buttons + related papers (#3, #7, #8), recently viewed component (#9), sticky search bar (#6).",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "STEP 1 — Item #1: Redesign hero in src/app/(public)/page.tsx. The page is a Server Component. Add a counter query: `const { count: paperCount } = await supabase.from('papers').select('*', { count: 'exact', head: true }).eq('status', 'published')`. Pass `paperCount` to the hero section. In the hero JSX, add below the subtitle <p>: `<p className='mt-2 text-2xl font-bold text-white'>{(paperCount ?? 0).toLocaleString()}+ past papers available</p>`. The TTU logo + content split layout already exists (flex flex-col sm:flex-row) — keep it, just add the counter. The search bar already appears inside the hero — keep it.",
 
@@ -47,5 +47,5 @@
     "cd /home/hysterical/Desktop/PQ && npm run test:unit"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 11 steps implemented. Hero paper count added via Supabase count query. PaperCard updated with hover tooltip (md+), 🔥 Trending badge (downloads > 10), and explicit prefetch={true}. PaperList skeleton redesigned to match card shape; empty state SVG replaced with brand-colored books illustration. Paper detail breadcrumb uses › separators with 40-char title truncation. ActionButtons.tsx (copy link + print) and SaveToHistory.tsx created and wired into paper detail page. Related papers section fetches up to 4 same-course papers. RecentlyViewed.tsx and RecentlyViewedWrapper.tsx created; wrapper dynamically imported (ssr:false) on home page. StickySearchWrapper.tsx created using IntersectionObserver; dynamically imported (ssr:false) on home page. One TypeScript fix needed: paper.course_id is string|null — guarded with if check before Supabase query. npm run build and npm run test:unit both pass."
 }
