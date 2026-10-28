@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Infrastructure and metadata improvements: install sharp (#16), Open Graph image (#17), plus final build/test/commit/push. Independent of FEAT-002 and FEAT-003 public/admin UI changes; can be done after any of the previous FEATs.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "STEP 1 — Item #16: Install sharp. Run `npm install --save-exact sharp@0.33.5` from /home/hysterical/Desktop/PQ. This adds sharp to package.json dependencies. Verify package.json contains `\"sharp\": \"0.33.5\"` after install.",
 
