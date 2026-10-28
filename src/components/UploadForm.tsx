@@ -61,6 +61,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastUpload, setLastUpload] = useState<LastUpload | null>(null)
+  const [isDirty, setIsDirty] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const isDraftAndContinueRef = useRef(false)
@@ -84,6 +85,17 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
     }
   }, [editPaper])
 
+  // Unsaved changes warning — attach beforeunload when form is dirty.
+  useEffect(() => {
+    if (!isDirty) return
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0] ?? null
     setFileError(null)
@@ -101,6 +113,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
     }
 
     setFile(picked)
+    setIsDirty(true)
   }
 
   async function handleAddCourse() {
@@ -285,6 +298,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           setTitle('')
           setFile(null)
           setProgress(0)
+          setIsDirty(false)
           if (fileInputRef.current) fileInputRef.current.value = ''
           setFormState('idle')
           return
@@ -301,6 +315,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
         if (fileInputRef.current) fileInputRef.current.value = ''
       }
 
+      setIsDirty(false)
       setFormState('success')
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Upload failed.')
@@ -379,7 +394,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           minLength={3}
           maxLength={200}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => { setTitle(e.target.value); setIsDirty(true) }}
           disabled={isSubmitting}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
           placeholder="e.g. CSC 301 – 2023 First Semester Exam"
@@ -395,7 +410,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           id="course_id"
           required
           value={courseId}
-          onChange={(e) => setCourseId(e.target.value)}
+          onChange={(e) => { setCourseId(e.target.value); setIsDirty(true) }}
           disabled={isSubmitting}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
         >
@@ -462,7 +477,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
             id="level"
             required
             value={level}
-            onChange={(e) => setLevel(e.target.value)}
+            onChange={(e) => { setLevel(e.target.value); setIsDirty(true) }}
             disabled={isSubmitting}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
           >
@@ -485,7 +500,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
             min={1990}
             max={new Date().getFullYear() + 1}
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={(e) => { setYear(e.target.value); setIsDirty(true) }}
             disabled={isSubmitting}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
           />
@@ -499,7 +514,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
             id="semester"
             required
             value={semester}
-            onChange={(e) => setSemester(e.target.value)}
+            onChange={(e) => { setSemester(e.target.value); setIsDirty(true) }}
             disabled={isSubmitting}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
           >
