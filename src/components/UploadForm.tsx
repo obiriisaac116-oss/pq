@@ -103,8 +103,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
     setFile(picked)
   }
 
-  async function handleAddCourse(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleAddCourse() {
     setAddingCourse(true)
     setAddCourseError(null)
     try {
@@ -415,44 +414,40 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           {showAddCourse ? '— Cancel' : '+ Add new course'}
         </button>
         {showAddCourse && (
-          <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2">
-            <p className="text-xs font-medium text-gray-700">New course</p>
+          <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">New course</p>
             {addCourseError && (
-              <p className="text-xs text-red-600">{addCourseError}</p>
+              <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{addCourseError}</p>
             )}
-            <form onSubmit={handleAddCourse} className="space-y-2">
-              <input
-                type="text"
-                placeholder="Code (e.g. CS101)"
-                required
-                value={newCode}
-                onChange={(e) => setNewCode(e.target.value)}
-                className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Name (e.g. Intro to CS)"
-                required
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Programme (e.g. BSc Computer Science)"
-                required
-                value={newProgramme}
-                onChange={(e) => setNewProgramme(e.target.value)}
-                className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={addingCourse}
-                className="rounded bg-brand-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
-              >
-                {addingCourse ? 'Adding…' : 'Add course'}
-              </button>
-            </form>
+            <input
+              type="text"
+              placeholder="Code (e.g. CS101)"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+            />
+            <input
+              type="text"
+              placeholder="Name (e.g. Intro to CS)"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+            />
+            <input
+              type="text"
+              placeholder="Programme (e.g. BSc Computer Science)"
+              value={newProgramme}
+              onChange={(e) => setNewProgramme(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+            />
+            <button
+              type="button"
+              disabled={addingCourse || !newCode.trim() || !newName.trim()}
+              onClick={handleAddCourse}
+              className="w-full rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {addingCourse ? 'Adding…' : 'Add course'}
+            </button>
           </div>
         )}
       </div>
