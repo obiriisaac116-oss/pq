@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Infrastructure and metadata improvements: install sharp (#16), Open Graph image (#17), plus final build/test/commit/push. Independent of FEAT-002 and FEAT-003 public/admin UI changes; can be done after any of the previous FEATs.",
+  "status": "pending",
+  "steps": [
+    "STEP 1 — Item #16: Install sharp. Run `npm install --save-exact sharp@0.33.5` from /home/hysterical/Desktop/PQ. This adds sharp to package.json dependencies. Verify package.json contains `\"sharp\": \"0.33.5\"` after install.",
+
+    "STEP 2 — Item #17: Create Open Graph image for paper detail pages. Create the file src/app/(public)/papers/[id]/opengraph-image.tsx. This file exports a default function using Next.js ImageResponse. The function signature must match the Next.js 14 OG image route handler pattern. Since this is in the [id] segment, it receives params. Content: `import { ImageResponse } from 'next/og'; import { createClient } from '@/lib/supabase/server'; export const runtime = 'nodejs'; export const alt = 'Past paper'; export const size = { width: 1200, height: 630 }; export const contentType = 'image/png'; export default async function Image({ params }: { params: { id: string } }) { const supabase = await createClient(); const { data: paper } = await supabase.from('papers').select('title, year, semester, courses(code)').eq('id', params.id).eq('status', 'published').maybeSingle(); const course = paper?.courses as { code: string } | null; const title = paper?.title ?? 'Past Examination Paper'; const code = course?.code ?? ''; const year = paper?.year ?? ''; const semester = paper?.semester ?? ''; return new ImageResponse((<div style={{ background: '#1d4ed8', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', padding: '60px', fontFamily: 'sans-serif' }}><p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '24px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>PastQuestions GH</p><h1 style={{ color: 'white', fontSize: '52px', fontWeight: 'bold', lineHeight: 1.2, margin: 0, maxWidth: '1000px' }}>{title}</h1><div style={{ display: 'flex', gap: '24px', marginTop: '32px' }}>{code && <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '8px 20px', borderRadius: '100px', fontSize: '24px' }}>{code}</span>}{year && <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '8px 20px', borderRadius: '100px', fontSize: '24px' }}>{year}</span>}{semester && <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '8px 20px', borderRadius: '100px', fontSize: '24px', textTransform: 'capitalize' }}>{semester} Semester</span>}</div></div>), { ...size }); }`. IMPORTANT: The JSX inside ImageResponse must not use Tailwind — it uses inline styles only. The ImageResponse import comes from 'next/og'.",
+
+    "STEP 3 — Run final build and tests. From /home/hysterical/Desktop/PQ: 1) Run `node scripts/gen-icons.mjs` to regenerate public icons if needed. 2) Run `npm run build`. Fix any TypeScript or ESLint errors that arise from any of the FEATs. 3) Run `npm run test:unit`. All tests must pass.",
+
+    "STEP 4 — Commit and push. Configure git user: `git config user.email 'obiriisaac116@gmail.com' && git config user.name 'Isaac Obiri'`. Stage all changed files individually (do NOT use git add -A blindly — stage src/, tailwind.config.ts, next.config.mjs, package.json, package-lock.json). Commit: `git commit -m 'feat: 20 UI/UX improvements + remove dark mode'`. Push: `git push https://<REDACTED_TOKEN>@github.com/obiriisaac116-oss/pq.git main`. The token is embedded in the URL — do not echo it in output."
+  ],
+  "acceptance_criteria": [
+    "package.json has `\"sharp\": \"0.33.5\"` in dependencies.",
+    "src/app/(public)/papers/[id]/opengraph-image.tsx exists and exports a valid Next.js 14 OG image handler.",
+    "npm run build passes with zero errors (this is the definitive verification pass across all FEATs).",
+    "npm run test:unit passes.",
+    "git log --oneline HEAD shows the new commit.",
+    "git push completes successfully."
+  ],
+  "verification": [
+    "cd /home/hysterical/Desktop/PQ && npm run build",
+    "cd /home/hysterical/Desktop/PQ && npm run test:unit",
+    "cd /home/hysterical/Desktop/PQ && git log --oneline -1"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

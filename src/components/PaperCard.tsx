@@ -49,6 +49,13 @@ export function PaperCard({ paper }: PaperCardProps) {
         semester === 'second' ? 'bg-violet-500' : 'bg-brand-primary'
       }`} />
 
+      {/* Trending badge */}
+      {(paper.downloads ?? 0) > 10 && (
+        <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+          🔥 Trending
+        </span>
+      )}
+
       <div className="flex flex-col flex-1 p-4">
         {/* Header: file type + year */}
         <div className="flex items-center justify-between mb-3">
@@ -85,6 +92,7 @@ export function PaperCard({ paper }: PaperCardProps) {
         <h2 className="flex-1 text-sm font-semibold leading-snug text-gray-900 mb-3 line-clamp-2">
           <Link
             href={`/papers/${paper.id}`}
+            prefetch={true}
             className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 after:absolute after:inset-0 after:rounded-2xl"
           >
             {paper.title}
@@ -115,6 +123,15 @@ export function PaperCard({ paper }: PaperCardProps) {
             </svg>
           </span>
         </div>
+      </div>
+
+      {/* Hover tooltip (desktop only) */}
+      <div
+        role="tooltip"
+        className="pointer-events-none absolute inset-x-0 top-full z-20 mt-1 hidden rounded-lg bg-white px-3 py-2 shadow-lg ring-1 ring-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-150 md:block"
+      >
+        <p className="text-xs font-semibold text-gray-800">{course?.name ?? ''}</p>
+        <p className="text-xs text-gray-500">{course?.programme ?? ''}</p>
       </div>
     </article>
   )

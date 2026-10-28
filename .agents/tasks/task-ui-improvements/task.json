@@ -1,0 +1,7 @@
+{
+  "task_id": "task-ui-improvements",
+  "task_description": "Implement 20 UI/UX improvements to the PastQuestions GH website: remove dark mode entirely, enhance hero with animated counter, tooltip on paper cards, breadcrumb, empty state, loading skeleton, sticky search, print/copy buttons, related papers, recently viewed, trending badge, admin bulk actions, admin preview modal, search history chips, keyboard shortcut (/), install sharp, Open Graph image, prefetch links, inline status toggle, unsaved changes warning. Run build + tests, commit and push.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null
+}
