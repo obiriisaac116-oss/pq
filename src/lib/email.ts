@@ -1,15 +1,12 @@
 // src/lib/email.ts
 //
-// Email via Brevo (formerly Sendinblue) SMTP using Nodemailer.
+// Email via Brevo HTTP API (not SMTP — Render blocks outbound SMTP ports).
 // Free tier: 300 emails/day, sends to any address, no domain verification needed.
 //
 // Required env vars:
-//   BREVO_SMTP_USER  — your Brevo login email
-//   BREVO_SMTP_KEY   — SMTP key from Brevo → SMTP & API → SMTP tab → Generate SMTP Key
-//   BREVO_FROM_EMAIL — verified sender email in Brevo (can be your Gmail)
-//   ADMIN_CONTACT_EMAIL — where contact form notifications go
-
-import nodemailer from 'nodemailer'
+//   BREVO_API_KEY       — API key from Brevo → SMTP & API → API Keys tab
+//   BREVO_FROM_EMAIL    — verified sender email in Brevo (your Gmail)
+//   ADMIN_CONTACT_EMAIL — where contact form notifications are delivered
 
 export interface ContactPayload {
   name: string
@@ -17,20 +14,32 @@ export interface ContactPayload {
   message: string
 }
 
-function createTransport() {
-  const user = process.env.BREVO_SMTP_USER
-  const pass = process.env.BREVO_SMTP_KEY
+async function brevoSend(payload: {
+  to: { email: string; name?: string }[]
+  sender: { email: string; name: string }
+  replyTo?: { email: string }
+  subject: string
+  htmlContent: string
+  bcc?: { email: string }[]
+}) {
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) throw new Error('BREVO_API_KEY is not set')
 
-  if (!user || !pass) {
-    throw new Error('BREVO_SMTP_USER or BREVO_SMTP_KEY environment variable is not set')
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': apiKey,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Brevo API error ${res.status}: ${text}`)
   }
 
-  return nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
-    auth: { user, pass },
-  })
+  return res.json()
 }
 
 /**
@@ -47,13 +56,11 @@ export async function sendContactNotification(
     return
   }
 
-  const fromEmail = process.env.BREVO_FROM_EMAIL ?? process.env.BREVO_SMTP_USER
+  const fromEmail = process.env.BREVO_FROM_EMAIL
   if (!fromEmail) {
     console.error('[email] BREVO_FROM_EMAIL is not set')
     return
   }
-
-  const transport = createTransport()
 
   const html = `
     <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
@@ -74,12 +81,12 @@ export async function sendContactNotification(
     </table>
   `
 
-  await transport.sendMail({
-    from: `"PastQuestions GH" <${fromEmail}>`,
-    to: adminEmail,
-    replyTo: email,
+  await brevoSend({
+    sender: { email: fromEmail, name: 'PastQuestions GH' },
+    to: [{ email: adminEmail }],
+    replyTo: { email },
     subject: `[PastQuestions GH] New message from ${name.replace(/[\r\n]/g, ' ')}`,
-    html,
+    htmlContent: html,
   })
 
   console.log('[email] Contact notification sent to', adminEmail)
@@ -96,13 +103,11 @@ export async function sendSubscriberNotification(
   if (subscriberEmails.length === 0) return
 
   const adminEmail = process.env.ADMIN_CONTACT_EMAIL
-  const fromEmail = process.env.BREVO_FROM_EMAIL ?? process.env.BREVO_SMTP_USER
+  const fromEmail = process.env.BREVO_FROM_EMAIL
   if (!adminEmail || !fromEmail) {
     console.error('[email] Missing ADMIN_CONTACT_EMAIL or BREVO_FROM_EMAIL')
     return
   }
-
-  const transport = createTransport()
 
   const html = `
     <div style="font-family:sans-serif;font-size:14px;max-width:600px;margin:0 auto">
@@ -120,12 +125,12 @@ export async function sendSubscriberNotification(
     </div>
   `
 
-  await transport.sendMail({
-    from: `"PastQuestions GH" <${fromEmail}>`,
-    to: adminEmail,
-    bcc: subscriberEmails.length > 0 ? subscriberEmails.join(',') : undefined,
+  await brevoSend({
+    sender: { email: fromEmail, name: 'PastQuestions GH' },
+    to: [{ email: adminEmail }],
+    bcc: subscriberEmails.map((e) => ({ email: e })),
     subject: `New paper available: ${paperTitle}`,
-    html,
+    htmlContent: html,
   })
 
   console.log('[email] Subscriber notification sent, BCC:', subscriberEmails.length, 'subscribers')

@@ -1,39 +1,35 @@
 import { NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
 
 export async function GET() {
-  const user = process.env.BREVO_SMTP_USER
-  const pass = process.env.BREVO_SMTP_KEY
-  const from = process.env.BREVO_FROM_EMAIL ?? user
+  const apiKey = process.env.BREVO_API_KEY
+  const from = process.env.BREVO_FROM_EMAIL
   const to = process.env.ADMIN_CONTACT_EMAIL
 
   const config = {
-    BREVO_SMTP_USER: user ? user : 'MISSING',
-    BREVO_SMTP_KEY: pass ? pass.slice(0, 10) + '...' : 'MISSING',
+    BREVO_API_KEY: apiKey ? apiKey.slice(0, 10) + '...' : 'MISSING',
     BREVO_FROM_EMAIL: from ?? 'MISSING',
     ADMIN_CONTACT_EMAIL: to ?? 'MISSING',
   }
 
-  if (!user || !pass || !to) {
+  if (!apiKey || !from || !to) {
     return NextResponse.json({ error: 'Missing env vars', config }, { status: 500 })
   }
 
   try {
-    const transport = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      auth: { user, pass },
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      body: JSON.stringify({
+        sender: { email: from, name: 'PastQuestions GH' },
+        to: [{ email: to }],
+        subject: 'PQ Test Email — ' + new Date().toISOString(),
+        htmlContent: '<p>✅ Email working via Brevo HTTP API!</p>',
+      }),
     })
 
-    const info = await transport.sendMail({
-      from: `"PastQuestions GH" <${from}>`,
-      to,
-      subject: 'PQ Test Email — ' + new Date().toISOString(),
-      html: '<p>✅ Email is working! Sent via Brevo SMTP.</p>',
-    })
-
-    return NextResponse.json({ success: true, messageId: info.messageId, config })
+    const data = await res.json()
+    if (!res.ok) return NextResponse.json({ error: data, config }, { status: 500 })
+    return NextResponse.json({ success: true, messageId: data.messageId, config })
   } catch (err) {
     return NextResponse.json({
       error: err instanceof Error ? err.message : 'Unknown error',

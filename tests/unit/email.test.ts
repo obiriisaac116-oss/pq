@@ -1,54 +1,49 @@
-// tests/unit/email.test.ts
+// tests/unit/email.test.ts — tests for Brevo HTTP API email helper
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-const mockSendMail = vi.fn()
-
-vi.mock('nodemailer', () => ({
-  default: {
-    createTransport: vi.fn(() => ({ sendMail: mockSendMail })),
-  },
-}))
+const mockFetch = vi.fn()
+vi.stubGlobal('fetch', mockFetch)
 
 import { sendContactNotification } from '@/lib/email'
 
 describe('sendContactNotification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSendMail.mockResolvedValue({ messageId: 'mock-id' })
-    process.env.BREVO_SMTP_USER = 'test@gmail.com'
-    process.env.BREVO_SMTP_KEY = 'test-smtp-key'
-    process.env.BREVO_FROM_EMAIL = 'test@gmail.com'
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ messageId: 'mock-id' }) })
+    process.env.BREVO_API_KEY = 'test-api-key'
+    process.env.BREVO_FROM_EMAIL = 'test@example.com'
     process.env.ADMIN_CONTACT_EMAIL = 'admin@example.com'
   })
 
   afterEach(() => {
-    delete process.env.BREVO_SMTP_USER
-    delete process.env.BREVO_SMTP_KEY
+    delete process.env.BREVO_API_KEY
     delete process.env.BREVO_FROM_EMAIL
     delete process.env.ADMIN_CONTACT_EMAIL
   })
 
-  it('calls sendMail with correct arguments', async () => {
+  it('calls Brevo API with correct arguments', async () => {
     await sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
-    expect(mockSendMail).toHaveBeenCalledOnce()
-    const [arg] = mockSendMail.mock.calls[0]
-    expect(arg.to).toBe('admin@example.com')
-    expect(arg.subject).toContain('Bob')
-    expect(arg.replyTo).toBe('bob@example.com')
+    expect(mockFetch).toHaveBeenCalledOnce()
+    const [url, opts] = mockFetch.mock.calls[0]
+    expect(url).toBe('https://api.brevo.com/v3/smtp/email')
+    const body = JSON.parse(opts.body)
+    expect(body.to[0].email).toBe('admin@example.com')
+    expect(body.subject).toContain('Bob')
+    expect(body.replyTo.email).toBe('bob@example.com')
   })
 
   it('uses ADMIN_CONTACT_EMAIL as recipient', async () => {
     process.env.ADMIN_CONTACT_EMAIL = 'contact@example.com'
     await sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
-    const [arg] = mockSendMail.mock.calls[0]
-    expect(arg.to).toBe('contact@example.com')
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.to[0].email).toBe('contact@example.com')
   })
 
-  it('re-throws when sendMail throws', async () => {
-    mockSendMail.mockRejectedValueOnce(new Error('SMTP error'))
+  it('throws when Brevo returns an error', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, text: async () => 'Unauthorized', status: 401 })
     await expect(
       sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
-    ).rejects.toThrow('SMTP error')
+    ).rejects.toThrow('Brevo API error 401')
   })
 
   it('returns silently when ADMIN_CONTACT_EMAIL is not set', async () => {
@@ -56,12 +51,12 @@ describe('sendContactNotification', () => {
     await expect(
       sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
     ).resolves.toBeUndefined()
-    expect(mockSendMail).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it('includes message in HTML body', async () => {
     await sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Test content' })
-    const [arg] = mockSendMail.mock.calls[0]
-    expect(arg.html).toContain('Test content')
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.htmlContent).toContain('Test content')
   })
 })
