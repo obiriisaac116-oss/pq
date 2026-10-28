@@ -31,5 +31,5 @@
     "cd /home/hysterical/Desktop/PQ && npm run test:unit"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 6 steps implemented. PapersTable: checkbox column with select-all, bulk action bar (Publish all/Unpublish all/Delete all via Promise.all), inline status toggle button replacing separate Publish/Unpublish, Preview button opening a modal that fetches /api/papers/[id]/download and renders PDF iframe or img. SearchBar: search history chips stored in pq:searchHistory localStorage (shown when focused+empty, each chip clickable/removable), '/' keyboard shortcut focusing input, kbd hint badge on sm+ screens. UploadForm: isDirty state set on every field onChange and file selection, cleared on successful submit, beforeunload listener attached only when dirty. Fixed TypeScript type error: bulkAction parameter typed as 'published'|'draft' instead of string. Build: zero errors. Tests: 30/30 passed."
 }
