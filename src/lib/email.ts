@@ -117,15 +117,19 @@ export async function sendSubscriberNotification(
     </div>
   `
 
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.ADMIN_EMAIL ?? fromEmail
+
   const { error } = await resend.emails.send({
     from: fromEmail,
-    to: fromEmail,
-    bcc: subscriberEmails,
+    to: adminEmail,
+    bcc: subscriberEmails.length > 0 ? subscriberEmails : undefined,
     subject: `New paper available: ${paperTitle}`,
     html,
   })
 
   if (error) {
+    console.error('[email] sendSubscriberNotification error:', error)
     throw new Error(`Resend error: ${error.message}`)
   }
-}
+
+  console.log('[email] Subscriber notification sent to', adminEmail, '+ BCC', subscriberEmails.length, 'subscribers')
