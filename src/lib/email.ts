@@ -133,3 +133,4 @@ export async function sendSubscriberNotification(
   }
 
   console.log('[email] Subscriber notification sent to', adminEmail, '+ BCC', subscriberEmails.length, 'subscribers')
+}
