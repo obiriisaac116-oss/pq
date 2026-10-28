@@ -1,9 +1,13 @@
 // src/lib/email.ts
 //
-// Email helper using Nodemailer + Gmail SMTP.
-// Requires GMAIL_USER and GMAIL_APP_PASSWORD environment variables.
-// GMAIL_APP_PASSWORD must be a 16-character App Password generated at
-// https://myaccount.google.com/apppasswords (not your regular Gmail password).
+// Email via Brevo (formerly Sendinblue) SMTP using Nodemailer.
+// Free tier: 300 emails/day, sends to any address, no domain verification needed.
+//
+// Required env vars:
+//   BREVO_SMTP_USER  — your Brevo login email
+//   BREVO_SMTP_KEY   — SMTP key from Brevo → SMTP & API → SMTP tab → Generate SMTP Key
+//   BREVO_FROM_EMAIL — verified sender email in Brevo (can be your Gmail)
+//   ADMIN_CONTACT_EMAIL — where contact form notifications go
 
 import nodemailer from 'nodemailer'
 
@@ -14,15 +18,17 @@ export interface ContactPayload {
 }
 
 function createTransport() {
-  const user = process.env.GMAIL_USER
-  const pass = process.env.GMAIL_APP_PASSWORD
+  const user = process.env.BREVO_SMTP_USER
+  const pass = process.env.BREVO_SMTP_KEY
 
   if (!user || !pass) {
-    throw new Error('GMAIL_USER or GMAIL_APP_PASSWORD environment variable is not set')
+    throw new Error('BREVO_SMTP_USER or BREVO_SMTP_KEY environment variable is not set')
   }
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
     auth: { user, pass },
   })
 }
@@ -35,9 +41,15 @@ export async function sendContactNotification(
 ): Promise<void> {
   const { name, email, message } = payload
 
-  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.GMAIL_USER
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL
   if (!adminEmail) {
-    console.error('[email] No admin email configured (ADMIN_CONTACT_EMAIL)')
+    console.error('[email] ADMIN_CONTACT_EMAIL is not set')
+    return
+  }
+
+  const fromEmail = process.env.BREVO_FROM_EMAIL ?? process.env.BREVO_SMTP_USER
+  if (!fromEmail) {
+    console.error('[email] BREVO_FROM_EMAIL is not set')
     return
   }
 
@@ -63,7 +75,7 @@ export async function sendContactNotification(
   `
 
   await transport.sendMail({
-    from: `"PastQuestions GH" <${process.env.GMAIL_USER}>`,
+    from: `"PastQuestions GH" <${fromEmail}>`,
     to: adminEmail,
     replyTo: email,
     subject: `[PastQuestions GH] New message from ${name.replace(/[\r\n]/g, ' ')}`,
@@ -83,9 +95,10 @@ export async function sendSubscriberNotification(
 ): Promise<void> {
   if (subscriberEmails.length === 0) return
 
-  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.GMAIL_USER
-  if (!adminEmail) {
-    console.error('[email] No admin email configured')
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL
+  const fromEmail = process.env.BREVO_FROM_EMAIL ?? process.env.BREVO_SMTP_USER
+  if (!adminEmail || !fromEmail) {
+    console.error('[email] Missing ADMIN_CONTACT_EMAIL or BREVO_FROM_EMAIL')
     return
   }
 
@@ -98,19 +111,17 @@ export async function sendSubscriberNotification(
       <p style="font-size:16px;font-weight:bold;color:#111827">${escapeHtml(paperTitle)}</p>
       <p>
         <a href="${escapeHtml(paperUrl)}"
-           style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
+           style="display:inline-block;background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
           View Paper
         </a>
       </p>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />
-      <p style="color:#6b7280;font-size:12px">
-        You are receiving this because you subscribed to PastQuestions GH updates.
-      </p>
+      <p style="color:#6b7280;font-size:12px">You subscribed to PastQuestions GH updates.</p>
     </div>
   `
 
   await transport.sendMail({
-    from: `"PastQuestions GH" <${process.env.GMAIL_USER}>`,
+    from: `"PastQuestions GH" <${fromEmail}>`,
     to: adminEmail,
     bcc: subscriberEmails.length > 0 ? subscriberEmails.join(',') : undefined,
     subject: `New paper available: ${paperTitle}`,

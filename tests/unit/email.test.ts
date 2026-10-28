@@ -1,20 +1,11 @@
 // tests/unit/email.test.ts
-//
-// Unit tests for src/lib/email.ts using Nodemailer + Gmail SMTP.
-// Mocks nodemailer so no real credentials are needed.
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// ---------------------------------------------------------------------------
-// Mock nodemailer before importing the module under test.
-// ---------------------------------------------------------------------------
 const mockSendMail = vi.fn()
 
 vi.mock('nodemailer', () => ({
   default: {
-    createTransport: vi.fn(() => ({
-      sendMail: mockSendMail,
-    })),
+    createTransport: vi.fn(() => ({ sendMail: mockSendMail })),
   },
 }))
 
@@ -24,79 +15,53 @@ describe('sendContactNotification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSendMail.mockResolvedValue({ messageId: 'mock-id' })
-    process.env.GMAIL_USER = 'test@gmail.com'
-    process.env.GMAIL_APP_PASSWORD = 'test-app-password'
+    process.env.BREVO_SMTP_USER = 'test@gmail.com'
+    process.env.BREVO_SMTP_KEY = 'test-smtp-key'
+    process.env.BREVO_FROM_EMAIL = 'test@gmail.com'
     process.env.ADMIN_CONTACT_EMAIL = 'admin@example.com'
   })
 
   afterEach(() => {
-    delete process.env.GMAIL_USER
-    delete process.env.GMAIL_APP_PASSWORD
+    delete process.env.BREVO_SMTP_USER
+    delete process.env.BREVO_SMTP_KEY
+    delete process.env.BREVO_FROM_EMAIL
     delete process.env.ADMIN_CONTACT_EMAIL
   })
 
   it('calls sendMail with correct arguments', async () => {
-    await sendContactNotification({
-      name: 'Bob',
-      email: 'bob@example.com',
-      message: 'Test message content',
-    })
-
+    await sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
     expect(mockSendMail).toHaveBeenCalledOnce()
-    const [callArg] = mockSendMail.mock.calls[0]
-    expect(callArg.to).toBe('admin@example.com')
-    expect(callArg.subject).toContain('Bob')
-    expect(callArg.replyTo).toBe('bob@example.com')
+    const [arg] = mockSendMail.mock.calls[0]
+    expect(arg.to).toBe('admin@example.com')
+    expect(arg.subject).toContain('Bob')
+    expect(arg.replyTo).toBe('bob@example.com')
   })
 
-  it('uses ADMIN_CONTACT_EMAIL as the recipient', async () => {
+  it('uses ADMIN_CONTACT_EMAIL as recipient', async () => {
     process.env.ADMIN_CONTACT_EMAIL = 'contact@example.com'
-
-    await sendContactNotification({
-      name: 'Bob',
-      email: 'bob@example.com',
-      message: 'Test message content',
-    })
-
-    const [callArg] = mockSendMail.mock.calls[0]
-    expect(callArg.to).toBe('contact@example.com')
+    await sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
+    const [arg] = mockSendMail.mock.calls[0]
+    expect(arg.to).toBe('contact@example.com')
   })
 
   it('re-throws when sendMail throws', async () => {
-    mockSendMail.mockRejectedValueOnce(new Error('SMTP connection failed'))
-
+    mockSendMail.mockRejectedValueOnce(new Error('SMTP error'))
     await expect(
-      sendContactNotification({
-        name: 'Bob',
-        email: 'bob@example.com',
-        message: 'Test message content',
-      }),
-    ).rejects.toThrow('SMTP connection failed')
+      sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
+    ).rejects.toThrow('SMTP error')
   })
 
-  it('returns silently when no admin email env var is set', async () => {
+  it('returns silently when ADMIN_CONTACT_EMAIL is not set', async () => {
     delete process.env.ADMIN_CONTACT_EMAIL
-    delete process.env.GMAIL_USER
-
     await expect(
-      sendContactNotification({
-        name: 'Bob',
-        email: 'bob@example.com',
-        message: 'Test message content',
-      }),
+      sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Hello' })
     ).resolves.toBeUndefined()
-
     expect(mockSendMail).not.toHaveBeenCalled()
   })
 
-  it('includes the message in the email HTML body', async () => {
-    await sendContactNotification({
-      name: 'Bob',
-      email: 'bob@example.com',
-      message: 'Test message content',
-    })
-
-    const [callArg] = mockSendMail.mock.calls[0]
-    expect(callArg.html).toContain('Test message content')
+  it('includes message in HTML body', async () => {
+    await sendContactNotification({ name: 'Bob', email: 'bob@example.com', message: 'Test content' })
+    const [arg] = mockSendMail.mock.calls[0]
+    expect(arg.html).toContain('Test content')
   })
 })
