@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   if (error || !data) {
     console.error('[presign] storage error:', error)
     return NextResponse.json(
-      { error: 'Failed to generate upload URL' },
+      { error: error?.message ?? 'Failed to generate upload URL' },
       { status: 500 },
     )
   }
