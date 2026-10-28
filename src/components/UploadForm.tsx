@@ -458,7 +458,7 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
       </div>
 
       {/* Level + Year + Semester row */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="level" className="block text-sm font-medium text-gray-700">
             Level <span aria-hidden="true">*</span>

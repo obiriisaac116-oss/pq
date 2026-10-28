@@ -114,8 +114,48 @@ export function PapersTable({ initialPapers }: Props) {
         </span>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+      {/* Mobile card view */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <p className="py-8 text-center text-gray-400">No papers match the current filters.</p>
+        ) : (
+          filtered.map((paper) => (
+            <div key={paper.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <p className="font-medium text-gray-900 text-sm leading-snug">{paper.title}</p>
+                <span className={[
+                  'shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                  paper.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700',
+                ].join(' ')}>{paper.status}</span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
+                <span>{paper.courses?.code ?? '—'}</span>
+                <span>{paper.year ?? '—'}</span>
+                <span className="capitalize">{paper.semester ?? '—'}</span>
+                <span>Level {paper.level ?? '—'}</span>
+                <span>{paper.downloads} downloads</span>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => toggleStatus(paper)} disabled={busy === paper.id}
+                  className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                  {busy === paper.id ? '…' : paper.status === 'published' ? 'Unpublish' : 'Publish'}
+                </button>
+                <a href={`/admin/upload?edit=${paper.id}`}
+                  className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 text-center">
+                  Edit
+                </a>
+                <button onClick={() => deletePaper(paper)} disabled={busy === paper.id}
+                  className="flex-1 rounded border border-red-300 px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50">
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
             <tr>

@@ -26,25 +26,17 @@ export function AdminNav() {
   return (
     <nav
       aria-label="Admin navigation"
-      className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 shadow-sm"
+      className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm"
     >
-      <div className="flex items-center gap-4">
-        {/* Logo mark */}
-        <Link href="/admin" className="flex items-center gap-2 text-brand-primary font-bold">
-          <span
-            aria-hidden="true"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-primary text-white text-xs font-black"
-          >
-            PQ
-          </span>
-          <span className="text-sm">Admin</span>
+      <div className="flex items-center justify-between px-3 py-2 gap-2">
+        {/* Logo */}
+        <Link href="/admin" className="flex items-center gap-1.5 text-brand-primary font-bold shrink-0">
+          <span aria-hidden="true" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-primary text-white text-xs font-black">PQ</span>
+          <span className="hidden sm:inline text-sm">Admin</span>
         </Link>
 
-        {/* Divider */}
-        <span aria-hidden="true" className="h-5 w-px bg-gray-200" />
-
-        {/* Nav links */}
-        <div className="flex items-center gap-1">
+        {/* Nav links — scrollable on mobile */}
+        <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none flex-1 mx-1">
           {NAV_LINKS.map(({ href, label }) => {
             const isActive = pathname.startsWith(href)
             return (
@@ -53,10 +45,8 @@ export function AdminNav() {
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
                 className={[
-                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-brand-primary text-white'
-                    : 'text-gray-600 hover:bg-gray-100',
+                  'shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap',
+                  isActive ? 'bg-brand-primary text-white' : 'text-gray-600 hover:bg-gray-100',
                 ].join(' ')}
               >
                 {label}
@@ -64,24 +54,20 @@ export function AdminNav() {
             )
           })}
         </div>
-      </div>
 
-      <div className="flex items-center gap-3">
-        <Link
-          href="/"
-          className="text-xs text-gray-400 hover:text-gray-600"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View site ↗
-        </Link>
-        <ThemeToggle />
-        <button
-          onClick={handleSignOut}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          Sign out
-        </button>
+        {/* Right actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          <Link href="/" className="hidden sm:inline-flex text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5" target="_blank" rel="noopener noreferrer">
+            View site ↗
+          </Link>
+          <ThemeToggle />
+          <button
+            onClick={handleSignOut}
+            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </nav>
   )

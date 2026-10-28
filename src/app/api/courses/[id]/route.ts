@@ -10,20 +10,14 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // ---------------------------------------------------------------------------
-// Helper: verify admin (same pattern as /api/papers/[id]/route.ts)
+// Helper: verify admin — uses service-role client for profile read
 // ---------------------------------------------------------------------------
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
+  const adminDb = createAdminClient()
+  const { data: profile } = await adminDb.from('profiles').select('role').eq('id', user.id).maybeSingle()
   return profile?.role === 'admin' ? user : null
 }
 
@@ -43,9 +37,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const supabase = await createClient()
-  const adminUser = await requireAdmin(supabase)
-
+  const adminUser = await requireAdmin()
   if (!adminUser) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -100,9 +92,7 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const supabase = await createClient()
-  const adminUser = await requireAdmin(supabase)
-
+  const adminUser = await requireAdmin()
   if (!adminUser) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

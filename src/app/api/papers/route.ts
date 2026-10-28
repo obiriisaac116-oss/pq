@@ -19,20 +19,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { paperInsertSchema, searchSchema } from '@/lib/validations'
 
 // ---------------------------------------------------------------------------
-// Helper: verify the requesting user is an admin
+// Helper: verify admin — uses service-role client for profile read so RLS
+// never blocks the check in production.
 // ---------------------------------------------------------------------------
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
+  const adminDb = createAdminClient()
+  const { data: profile } = await adminDb.from('profiles').select('role').eq('id', user.id).maybeSingle()
   return profile?.role === 'admin' ? user : null
 }
 
@@ -43,7 +38,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient()
 
   // Detect admin session so we can include drafts in the response.
-  const adminUser = await requireAdmin(supabase)
+  const adminUser = await requireAdmin()
   const queryClient = adminUser ? createAdminClient() : supabase
 
   const params = Object.fromEntries(request.nextUrl.searchParams.entries())
@@ -104,8 +99,7 @@ export async function GET(request: NextRequest) {
 // POST /api/papers  (admin only)
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const adminUser = await requireAdmin(supabase)
+  const adminUser = await requireAdmin()
 
   if (!adminUser) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
