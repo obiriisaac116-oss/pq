@@ -87,10 +87,12 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // 8. Email notification — fire-and-forget
-  sendContactNotification({ name, email, message }).catch((err) =>
-    console.error('[contact] Email send failed:', err instanceof Error ? err.message : err),
-  )
+  // 8. Email notification — log success/failure explicitly
+  sendContactNotification({ name, email, message })
+    .then(() => console.log('[contact] Email notification sent'))
+    .catch((err) =>
+      console.error('[contact] Email send failed:', err instanceof Error ? err.message : err),
+    )
 
   return NextResponse.json({ success: true })
 }

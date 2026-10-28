@@ -54,16 +54,22 @@ export async function sendContactNotification(
     return
   }
 
+  // NOTE: When using onboarding@resend.dev as the from address, Resend only
+  // delivers to the email address registered on your Resend account.
+  // To send to any address you must verify a custom domain on Resend.
   const { error } = await resend.emails.send({
     from: fromEmail,
     to: adminEmail,
-    subject: `New contact message from ${name.replace(/[\r\n]/g, ' ')}`,
+    subject: `[PastQuestions GH] New contact message from ${name.replace(/[\r\n]/g, ' ')}`,
     html,
   })
 
   if (error) {
+    console.error('[email] sendContactNotification error:', error)
     throw new Error(`Resend error: ${error.message}`)
   }
+
+  console.log('[email] Contact notification sent to', adminEmail)
 }
 
 /** Minimal HTML escaping to prevent injection in the email body. */
