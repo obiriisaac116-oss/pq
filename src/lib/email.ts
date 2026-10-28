@@ -25,6 +25,10 @@ export async function sendContactNotification(
   // Lazily create the client so the build does not require the env var.
   const resend = new Resend(process.env.RESEND_API_KEY!)
 
+  // RESEND_FROM_EMAIL must be on a verified domain. Fall back to Resend's
+  // shared onboarding address which works on free tier without verification.
+  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+
   const html = `
     <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
       <tbody>
@@ -44,9 +48,15 @@ export async function sendContactNotification(
     </table>
   `
 
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.ADMIN_EMAIL
+  if (!adminEmail) {
+    console.error('[email] No admin email configured (ADMIN_CONTACT_EMAIL)')
+    return
+  }
+
   const { error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
-    to: process.env.ADMIN_EMAIL!,
+    from: fromEmail,
+    to: adminEmail,
     subject: `New contact message from ${name.replace(/[\r\n]/g, ' ')}`,
     html,
   })
