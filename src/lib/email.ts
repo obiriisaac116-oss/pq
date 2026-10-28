@@ -1,11 +1,11 @@
 // src/lib/email.ts
 //
-// Resend email helper for sending contact notifications to the admin.
-// The Resend client is created lazily (inside the function) so the module
-// can be imported at build time without a real RESEND_API_KEY present.
-// Throws on error so callers can decide how to handle failures.
+// Email helper using Nodemailer + Gmail SMTP.
+// Requires GMAIL_USER and GMAIL_APP_PASSWORD environment variables.
+// GMAIL_APP_PASSWORD must be a 16-character App Password generated at
+// https://myaccount.google.com/apppasswords (not your regular Gmail password).
 
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 
 export interface ContactPayload {
   name: string
@@ -13,21 +13,35 @@ export interface ContactPayload {
   message: string
 }
 
+function createTransport() {
+  const user = process.env.GMAIL_USER
+  const pass = process.env.GMAIL_APP_PASSWORD
+
+  if (!user || !pass) {
+    throw new Error('GMAIL_USER or GMAIL_APP_PASSWORD environment variable is not set')
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  })
+}
+
 /**
- * Sends a contact-form notification email to the configured admin address.
- * Throws if Resend returns an error.
+ * Sends a contact-form notification email to the admin.
  */
 export async function sendContactNotification(
   payload: ContactPayload,
 ): Promise<void> {
   const { name, email, message } = payload
 
-  // Lazily create the client so the build does not require the env var.
-  const resend = new Resend(process.env.RESEND_API_KEY!)
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.GMAIL_USER
+  if (!adminEmail) {
+    console.error('[email] No admin email configured (ADMIN_CONTACT_EMAIL)')
+    return
+  }
 
-  // RESEND_FROM_EMAIL must be on a verified domain. Fall back to Resend's
-  // shared onboarding address which works on free tier without verification.
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+  const transport = createTransport()
 
   const html = `
     <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
@@ -48,44 +62,19 @@ export async function sendContactNotification(
     </table>
   `
 
-  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.ADMIN_EMAIL
-  if (!adminEmail) {
-    console.error('[email] No admin email configured (ADMIN_CONTACT_EMAIL)')
-    return
-  }
-
-  // NOTE: When using onboarding@resend.dev as the from address, Resend only
-  // delivers to the email address registered on your Resend account.
-  // To send to any address you must verify a custom domain on Resend.
-  const { error } = await resend.emails.send({
-    from: fromEmail,
+  await transport.sendMail({
+    from: `"PastQuestions GH" <${process.env.GMAIL_USER}>`,
     to: adminEmail,
-    subject: `[PastQuestions GH] New contact message from ${name.replace(/[\r\n]/g, ' ')}`,
+    replyTo: email,
+    subject: `[PastQuestions GH] New message from ${name.replace(/[\r\n]/g, ' ')}`,
     html,
   })
-
-  if (error) {
-    console.error('[email] sendContactNotification error:', error)
-    throw new Error(`Resend error: ${error.message}`)
-  }
 
   console.log('[email] Contact notification sent to', adminEmail)
 }
 
-/** Minimal HTML escaping to prevent injection in the email body. */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
 /**
- * Sends a notification email to all subscribers when a new paper is published.
- * Uses BCC so subscriber addresses are not exposed to each other.
- * Returns silently if subscriberEmails is empty.
+ * Sends a notification to all subscribers when a new paper is published.
  */
 export async function sendSubscriberNotification(
   paperTitle: string,
@@ -94,8 +83,13 @@ export async function sendSubscriberNotification(
 ): Promise<void> {
   if (subscriberEmails.length === 0) return
 
-  const resend = new Resend(process.env.RESEND_API_KEY!)
-  const fromEmail = process.env.RESEND_FROM_EMAIL!
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.GMAIL_USER
+  if (!adminEmail) {
+    console.error('[email] No admin email configured')
+    return
+  }
+
+  const transport = createTransport()
 
   const html = `
     <div style="font-family:sans-serif;font-size:14px;max-width:600px;margin:0 auto">
@@ -103,10 +97,8 @@ export async function sendSubscriberNotification(
       <p>A new past question paper has just been published:</p>
       <p style="font-size:16px;font-weight:bold;color:#111827">${escapeHtml(paperTitle)}</p>
       <p>
-        <a
-          href="${escapeHtml(paperUrl)}"
-          style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600"
-        >
+        <a href="${escapeHtml(paperUrl)}"
+           style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
           View Paper
         </a>
       </p>
@@ -117,20 +109,22 @@ export async function sendSubscriberNotification(
     </div>
   `
 
-  const adminEmail = process.env.ADMIN_CONTACT_EMAIL ?? process.env.ADMIN_EMAIL ?? fromEmail
-
-  const { error } = await resend.emails.send({
-    from: fromEmail,
+  await transport.sendMail({
+    from: `"PastQuestions GH" <${process.env.GMAIL_USER}>`,
     to: adminEmail,
-    bcc: subscriberEmails.length > 0 ? subscriberEmails : undefined,
+    bcc: subscriberEmails.length > 0 ? subscriberEmails.join(',') : undefined,
     subject: `New paper available: ${paperTitle}`,
     html,
   })
 
-  if (error) {
-    console.error('[email] sendSubscriberNotification error:', error)
-    throw new Error(`Resend error: ${error.message}`)
-  }
+  console.log('[email] Subscriber notification sent, BCC:', subscriberEmails.length, 'subscribers')
+}
 
-  console.log('[email] Subscriber notification sent to', adminEmail, '+ BCC', subscriberEmails.length, 'subscribers')
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
