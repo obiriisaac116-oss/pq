@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Remove dark mode entirely from the codebase. This covers: deleting ThemeToggle.tsx, removing its import/usage from (public)/layout.tsx and AdminNav.tsx, removing darkMode:'class' from tailwind.config.ts, stripping all dark: CSS classes from PaperCard.tsx / FilterPanel.tsx / layout.tsx / AdminNav.tsx, removing the beforeInteractive theme script and dark: classes from src/app/layout.tsx body. This is a prerequisite for all other FEATs because other FEATs add classes to the same files and would reintroduce dark: noise if done first.",
+  "status": "completed",
+  "steps": [
+    "1. tailwind.config.ts: remove the line `darkMode: 'class',` (line 5). The rest of the config stays intact.",
+    "2. src/app/layout.tsx: a) Remove the `<Script id='theme-init' strategy='beforeInteractive'>` block (the entire <head> tag and its Script child). b) Change the <body> className from `'bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors'` to `'bg-white text-gray-900'`. c) Remove the `suppressHydrationWarning` from <html> (no longer needed). d) Remove the `import Script from 'next/script'` import.",
+    "3. src/app/(public)/layout.tsx: a) Remove `import { ThemeToggle } from '@/components/ThemeToggle'`. b) Remove the `<ThemeToggle />` JSX element from the nav items.",
+    "4. src/components/AdminNav.tsx: a) Remove `import { ThemeToggle } from '@/components/ThemeToggle'`. b) Remove the `<ThemeToggle />` JSX element from the right-actions div.",
+    "5. src/components/PaperCard.tsx: Strip all dark: class variants from: semesterColor record values (remove the `dark:bg-blue-900/40 dark:text-blue-300` etc. parts), fileTypeBg record values, the article className, both year/level Badge classNames, the course code <p> className, the title <h2> className, the downloads <span> className.",
+    "6. src/components/FilterPanel.tsx: a) In the selectClass string, remove `dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100`. b) In each label className, remove `dark:text-gray-400`. c) In the mobile toggle button className, remove `dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200`.",
+    "7. Delete the file src/components/ThemeToggle.tsx entirely."
+  ],
+  "acceptance_criteria": [
+    "tailwind.config.ts has no `darkMode` key.",
+    "src/components/ThemeToggle.tsx no longer exists.",
+    "src/app/(public)/layout.tsx does not import or reference ThemeToggle.",
+    "src/components/AdminNav.tsx does not import or reference ThemeToggle.",
+    "src/app/layout.tsx has no Script import, no theme-init Script block, no dark: classes.",
+    "No dark: CSS class prefix appears anywhere in src/**/*.{ts,tsx} after the changes (verify by building — TypeScript will error on unknown imports, and removed dark: classes will be dead code that doesn't break the build).",
+    "npm run build passes with zero errors.",
+    "npm run test:unit passes."
+  ],
+  "verification": [
+    "cd /home/hysterical/Desktop/PQ && npm run build",
+    "cd /home/hysterical/Desktop/PQ && npm run test:unit"
+  ],
+  "blocked_reason": null,
+  "findings": "All steps completed successfully. ThemeToggle.tsx deleted, all dark: class prefixes removed from 5 files, darkMode:'class' removed from tailwind.config.ts, Script import and beforeInteractive theme-init block removed from root layout. npm run build: zero TypeScript/ESLint errors, all 21 pages generated. npm run test:unit: 30/30 tests passed."
+}

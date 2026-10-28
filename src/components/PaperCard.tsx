@@ -15,16 +15,16 @@ const semesterLabel: Record<string, string> = {
 }
 
 const semesterColor: Record<string, string> = {
-  first: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  second: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-  resit: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  first: 'bg-blue-100 text-blue-700',
+  second: 'bg-violet-100 text-violet-700',
+  resit: 'bg-amber-100 text-amber-700',
 }
 
 const fileTypeBg: Record<string, string> = {
-  pdf: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  jpg: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-  jpeg: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-  png: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  pdf: 'bg-red-100 text-red-700',
+  jpg: 'bg-sky-100 text-sky-700',
+  jpeg: 'bg-sky-100 text-sky-700',
+  png: 'bg-emerald-100 text-emerald-700',
 }
 
 function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -42,7 +42,7 @@ export function PaperCard({ paper }: PaperCardProps) {
   const fileType = paper.file_type ?? 'pdf'
 
   return (
-    <article className="group relative flex flex-col rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+    <article className="group relative flex flex-col rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
       {/* Top color bar based on semester */}
       <div className={`h-1 rounded-t-2xl w-full ${
         semester === 'resit' ? 'bg-amber-400' :
@@ -57,12 +57,12 @@ export function PaperCard({ paper }: PaperCardProps) {
           </Badge>
           <div className="flex items-center gap-1.5">
             {paper.year && (
-              <Badge className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              <Badge className="bg-gray-100 text-gray-600">
                 {paper.year}
               </Badge>
             )}
             {level && (
-              <Badge className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              <Badge className="bg-gray-100 text-gray-600">
                 L{level}
               </Badge>
             )}
@@ -71,10 +71,10 @@ export function PaperCard({ paper }: PaperCardProps) {
 
         {/* Course code */}
         {course && (
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-brand-primary dark:text-blue-400 truncate">
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-brand-primary truncate">
             {course.code}
             {course.programme && (
-              <span className="ml-1 font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">
+              <span className="ml-1 font-normal normal-case tracking-normal text-gray-400">
                 · {course.programme}
               </span>
             )}
@@ -82,7 +82,7 @@ export function PaperCard({ paper }: PaperCardProps) {
         )}
 
         {/* Title */}
-        <h2 className="flex-1 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100 mb-3 line-clamp-2">
+        <h2 className="flex-1 text-sm font-semibold leading-snug text-gray-900 mb-3 line-clamp-2">
           <Link
             href={`/papers/${paper.id}`}
             className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 after:absolute after:inset-0 after:rounded-2xl"
@@ -100,7 +100,7 @@ export function PaperCard({ paper }: PaperCardProps) {
 
         {/* Footer */}
         <div className="mt-auto flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+          <span className="flex items-center gap-1 text-xs text-gray-400">
             <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />

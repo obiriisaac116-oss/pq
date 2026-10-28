@@ -51,31 +51,31 @@ export function FilterPanel({ programmes = [] }: FilterPanelProps) {
   }
 
   const selectClass =
-    'block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+    'block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary'
 
   const filters = (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" role="group" aria-label="Filter past questions">
       <div>
-        <label htmlFor="filter-programme" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Programme</label>
+        <label htmlFor="filter-programme" className="mb-1 block text-xs font-medium text-gray-600">Programme</label>
         <select id="filter-programme" value={searchParams.get('programme') ?? ''} onChange={(e) => updateParam('programme', e.target.value)} className={selectClass}>
           <option value="">All programmes</option>
           {programmes.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
       <div>
-        <label htmlFor="filter-level" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Level</label>
+        <label htmlFor="filter-level" className="mb-1 block text-xs font-medium text-gray-600">Level</label>
         <select id="filter-level" value={searchParams.get('level') ?? ''} onChange={(e) => updateParam('level', e.target.value)} className={selectClass}>
           {LEVEL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
       <div>
-        <label htmlFor="filter-year" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Year</label>
+        <label htmlFor="filter-year" className="mb-1 block text-xs font-medium text-gray-600">Year</label>
         <select id="filter-year" value={searchParams.get('year') ?? ''} onChange={(e) => updateParam('year', e.target.value)} className={selectClass}>
           {YEAR_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
       <div>
-        <label htmlFor="filter-semester" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Semester</label>
+        <label htmlFor="filter-semester" className="mb-1 block text-xs font-medium text-gray-600">Semester</label>
         <select id="filter-semester" value={searchParams.get('semester') ?? ''} onChange={(e) => updateParam('semester', e.target.value)} className={selectClass}>
           {SEMESTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -87,7 +87,7 @@ export function FilterPanel({ programmes = [] }: FilterPanelProps) {
     <div>
       {/* Mobile toggle */}
       <button
-        className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm sm:hidden dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+        className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm sm:hidden"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >

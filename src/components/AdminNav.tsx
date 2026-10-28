@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NAV_LINKS = [
   { href: '/admin/papers', label: 'Papers' },
@@ -60,7 +59,6 @@ export function AdminNav() {
           <Link href="/" className="hidden sm:inline-flex text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5" target="_blank" rel="noopener noreferrer">
             View site ↗
           </Link>
-          <ThemeToggle />
           <button
             onClick={handleSignOut}
             className="rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap"
