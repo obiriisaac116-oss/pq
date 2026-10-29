@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import dynamicImport from 'next/dynamic'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Suspense } from 'react'
 
 import { createClient } from '@/lib/supabase/server'
@@ -57,6 +58,16 @@ const StickySearchWrapper = dynamicImport(
   { ssr: false },
 )
 
+const ResultFilter = dynamicImport(
+  () => import('@/components/ResultFilter').then((m) => ({ default: m.ResultFilter })),
+  { ssr: false },
+)
+
+const DownloadHistory = dynamicImport(
+  () => import('@/components/DownloadHistory').then((m) => ({ default: m.DownloadHistory })),
+  { ssr: false },
+)
+
 export const metadata: Metadata = {
   title: 'PastQuestions GH — Find Your Past Exam Papers',
   description: 'Browse and download past examination papers for your university courses.',
@@ -72,6 +83,9 @@ interface HomePageProps {
     course_code?: string
     level?: string
     year?: string
+    year_from?: string
+    year_to?: string
+    tag?: string
     semester?: string
     page?: string
   }
@@ -82,9 +96,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const parsed = searchSchema.safeParse(searchParams)
   const params = parsed.success
     ? parsed.data
-    : { page: 1, per_page: 12, q: undefined, programme: undefined, course_code: undefined, level: undefined, year: undefined, semester: undefined }
+    : { page: 1, per_page: 12, q: undefined, programme: undefined, course_code: undefined, level: undefined, year: undefined, year_from: undefined, year_to: undefined, tag: undefined, semester: undefined }
 
-  const { q, programme, course_code, level, year, semester, page, per_page } = params
+  const { q, programme, course_code, level, year, year_from, year_to, tag, semester, page, per_page } = params
   const offset = (page - 1) * per_page
 
   const supabase = await createClient()
@@ -123,6 +137,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
   if (level) query = query.eq('level', level)
   if (year) query = query.eq('year', year)
+  if (year_from) query = query.gte('year', year_from)
+  if (year_to) query = query.lte('year', year_to)
+  if (tag) query = query.contains('tags', [tag])
   if (semester) query = query.eq('semester', semester)
   // Apply course filter: if courseIds is an empty array, no papers can match.
   if (courseIds !== null) {
@@ -151,6 +168,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       (courseRows ?? [])
         .map((c: Pick<CoursesRow, 'programme'>) => c.programme)
         .filter((p): p is string => Boolean(p)),
+    ),
+  ].sort()
+
+  // Fetch distinct tags for tag chips.
+  const { data: tagRows } = await supabase
+    .from('papers')
+    .select('tags')
+    .eq('status', 'published')
+  const allTags = [
+    ...new Set(
+      (tagRows ?? []).flatMap((r) => r.tags ?? []),
     ),
   ].sort()
 
@@ -190,6 +218,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <SearchBar />
               </Suspense>
             </div>
+            <div className="mt-3 text-center sm:text-left">
+              <Link href="/request" className="text-sm text-white/80 hover:text-white underline underline-offset-2">
+                Can&apos;t find your paper? Request it →
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -213,6 +246,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         {/* Recently viewed papers */}
         <Suspense fallback={null}>
           <RecentlyViewedWrapper />
+        </Suspense>
+
+        {/* Download history */}
+        <Suspense fallback={null}>
+          <DownloadHistory />
         </Suspense>
 
         {/* Filters */}
@@ -239,9 +277,38 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </p>
         )}
 
+        {/* Tag chips */}
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {allTags.map((t) => {
+              const isActive = tag === t
+              const nextParams = new URLSearchParams(searchParams as Record<string, string>)
+              if (isActive) {
+                nextParams.delete('tag')
+              } else {
+                nextParams.set('tag', t)
+              }
+              nextParams.delete('page')
+              return (
+                <Link
+                  key={t}
+                  href={`/?${nextParams.toString()}`}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-brand-primary text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  #{t}
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
         {/* Results */}
         <Suspense fallback={<PaperList papers={[]} loading />}>
-          <PaperList papers={papers ?? []} />
+          <ResultFilter papers={papers ?? []} />
         </Suspense>
 
         {/* Pagination */}

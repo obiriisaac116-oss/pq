@@ -32,6 +32,18 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               Home
             </Link>
             <Link
+              href="/courses"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Courses
+            </Link>
+            <Link
+              href="/bookmarks"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Saved
+            </Link>
+            <Link
               href="/contact"
               className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
@@ -49,7 +61,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       {/* ── Footer ── */}
       <footer className="border-t border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -57,12 +69,15 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                 <p className="text-base font-bold text-brand-primary">PastQuestions GH</p>
               </div>
               <p className="mt-1 text-sm text-gray-500">Past exam papers for Takoradi Technical University students.</p>
+              <p className="mt-2 text-sm text-gray-400">Built with ❤️ for TTU students</p>
             </div>
             {/* Quick links */}
             <div>
               <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Quick links</p>
               <ul className="mt-2 space-y-1">
                 <li><Link href="/" className="text-sm text-gray-600 hover:text-brand-primary hover:underline">Home</Link></li>
+                <li><Link href="/courses" className="text-sm text-gray-600 hover:text-brand-primary hover:underline">Courses</Link></li>
+                <li><Link href="/bookmarks" className="text-sm text-gray-600 hover:text-brand-primary hover:underline">Bookmarks</Link></li>
                 <li><Link href="/contact" className="text-sm text-gray-600 hover:text-brand-primary hover:underline">Contact</Link></li>
               </ul>
             </div>
@@ -99,6 +114,17 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                     obiriisaac116@gmail.com
                   </a>
                 </li>
+                <li>
+                  <a
+                    href="https://github.com/obiriisaac116-oss/pq"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    <GitHubIcon />
+                    GitHub
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
@@ -132,6 +158,14 @@ function EmailIcon() {
     <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
       <polyline points="22,6 12,12 2,6"/>
+    </svg>
+  )
+}
+
+function GitHubIcon() {
+  return (
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/>
     </svg>
   )
 }

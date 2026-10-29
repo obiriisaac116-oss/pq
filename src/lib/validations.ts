@@ -52,6 +52,8 @@ export const paperInsertSchema = z.object({
   status: z.enum(STATUS_VALUES).optional().default('draft'),
   file_path: z.string().min(1),
   file_type: z.enum(FILE_TYPE_VALUES),
+  publish_at: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 })
 
 export type PaperInsert = z.infer<typeof paperInsertSchema>
@@ -81,6 +83,9 @@ export const paperUpdateSchema = z.object({
   status: z.enum(STATUS_VALUES).optional(),
   file_path: z.string().min(1).optional(),
   file_type: z.enum(FILE_TYPE_VALUES).optional(),
+  archived: z.boolean().optional(),
+  publish_at: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 })
 
 export type PaperUpdate = z.infer<typeof paperUpdateSchema>
@@ -126,6 +131,9 @@ export const searchSchema = z.object({
   // Keep level as a string to match the papers.level TEXT column end-to-end.
   level: z.string().optional(),
   year: z.coerce.number().int().optional(),
+  year_from: z.coerce.number().int().optional(),
+  year_to: z.coerce.number().int().optional(),
+  tag: z.string().optional(),
   semester: z.enum(SEMESTER_VALUES).optional(),
   page: z.coerce.number().int().min(1).default(1),
   per_page: z.coerce.number().int().min(1).max(50).default(12),

@@ -86,6 +86,9 @@ export type PapersRow = {
   search_vec: string
   created_at: string
   updated_at: string
+  archived: boolean | null
+  tags: string[] | null
+  publish_at: string | null
 }
 
 export type PapersInsert = {
@@ -101,6 +104,9 @@ export type PapersInsert = {
   downloads?: number
   created_at?: string
   updated_at?: string
+  archived?: boolean | null
+  tags?: string[] | null
+  publish_at?: string | null
 }
 
 export type PapersUpdate = {
@@ -116,6 +122,9 @@ export type PapersUpdate = {
   downloads?: number
   created_at?: string
   updated_at?: string
+  archived?: boolean | null
+  tags?: string[] | null
+  publish_at?: string | null
 }
 
 // -----------------------------------------------------------------------------
@@ -172,6 +181,29 @@ export type SubscribersUpdate = {
 }
 
 // -----------------------------------------------------------------------------
+// paper_ratings
+// -----------------------------------------------------------------------------
+export type PaperRatingsRow = {
+  id: string
+  paper_id: string
+  session_id: string
+  rating: number
+  created_at: string
+}
+
+export type PaperRatingsInsert = {
+  id?: string
+  paper_id: string
+  session_id: string
+  rating: number
+  created_at?: string
+}
+
+export type PaperRatingsUpdate = {
+  rating?: number
+}
+
+// -----------------------------------------------------------------------------
 // Database (compatible with createClient<Database>)
 // -----------------------------------------------------------------------------
 export type Database = {
@@ -213,6 +245,19 @@ export type Database = {
         Insert: SubscribersInsert
         Update: SubscribersUpdate
         Relationships: []
+      }
+      paper_ratings: {
+        Row: PaperRatingsRow
+        Insert: PaperRatingsInsert
+        Update: PaperRatingsUpdate
+        Relationships: [
+          {
+            foreignKeyName: 'paper_ratings_paper_id_fkey'
+            columns: ['paper_id']
+            referencedRelation: 'papers'
+            referencedColumns: ['id']
+          },
+        ]
       }
     }
     Views: Record<string, never>

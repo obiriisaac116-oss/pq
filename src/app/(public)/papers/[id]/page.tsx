@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -11,6 +12,16 @@ import { ActionButtons } from './ActionButtons'
 import { SaveToHistory } from './SaveToHistory'
 import type { PapersRow, CoursesRow } from '@/types/database'
 import type { PaperWithCoursePublic } from '@/components/PaperCard'
+
+const StarRating = dynamic(
+  () => import('@/components/StarRating').then((m) => ({ default: m.StarRating })),
+  { ssr: false },
+)
+
+const BookmarkButton = dynamic(
+  () => import('@/components/BookmarkButton').then((m) => ({ default: m.BookmarkButton })),
+  { ssr: false },
+)
 
 type PaperWithCourse = PapersRow & { courses: CoursesRow | null }
 
@@ -82,6 +93,17 @@ export default async function PaperPage({ params }: PaperPageProps) {
     .from('papers')
     .createSignedUrl(paper.file_path, 3600)
   const previewUrl = signedUrlData?.signedUrl ?? null
+
+  // Fetch rating aggregate.
+  const { data: ratingRows } = await supabase
+    .from('paper_ratings')
+    .select('rating')
+    .eq('paper_id', paper.id)
+  const ratingCount = ratingRows?.length ?? 0
+  const averageRating =
+    ratingCount > 0
+      ? (ratingRows ?? []).reduce((sum, r) => sum + r.rating, 0) / ratingCount
+      : 0
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pq-questions26.onrender.com'
 
@@ -219,15 +241,40 @@ export default async function PaperPage({ params }: PaperPageProps) {
           </div>
         )}
 
+        {/* Full screen link */}
+        {previewUrl && (
+          <Link
+            href={`/view/${paper.id}`}
+            className="mt-2 inline-flex items-center gap-1 text-sm text-brand-primary hover:underline"
+          >
+            <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            </svg>
+            Full screen
+          </Link>
+        )}
+
+        {/* Star rating */}
+        <StarRating
+          paperId={paper.id}
+          initialAverage={averageRating}
+          initialCount={ratingCount}
+        />
+
         {/* Download */}
-        <DownloadButton paperId={paper.id} />
+        <div className="mt-4 flex items-center gap-2">
+          <div className="flex-1">
+            <DownloadButton paperId={paper.id} />
+          </div>
+          <BookmarkButton paperId={paper.id} className="flex-shrink-0" />
+        </div>
 
         {/* Copy link + Print */}
         <ActionButtons />
 
         {/* WhatsApp share */}
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(`Check out this past question: ${paper.title} ${siteUrl}/papers/${paper.id}`)}`}
+          href={`https://wa.me/?text=${encodeURIComponent(`Check out this TTU past question: ${paper.title} — ${siteUrl}/papers/${paper.id}`)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-3 flex items-center justify-center gap-2 rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 transition-colors"

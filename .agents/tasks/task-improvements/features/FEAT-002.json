@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Public UX features: course browse page, paper ratings, request-a-paper form, client-side result filter, year range filter, download history, WhatsApp share improvement, bookmarks, and full-screen PDF viewer. All operate on the existing schema plus migration 004 (ratings). Independent from FEAT-003 and FEAT-004. Depends on FEAT-001 (ToastProvider in layout, packages installed).",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Create supabase/migrations/004_ratings.sql with exact SQL: CREATE TABLE public.paper_ratings (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), paper_id uuid NOT NULL REFERENCES public.papers(id) ON DELETE CASCADE, session_id text NOT NULL, rating int NOT NULL CHECK (rating BETWEEN 1 AND 5), created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(paper_id, session_id)); ALTER TABLE public.paper_ratings ENABLE ROW LEVEL SECURITY; CREATE POLICY \"Anyone can rate\" ON public.paper_ratings FOR INSERT WITH CHECK (true); CREATE POLICY \"Anyone can read ratings\" ON public.paper_ratings FOR SELECT USING (true); CREATE POLICY \"Users can update own rating\" ON public.paper_ratings FOR UPDATE USING (true);",
     "Edit src/types/database.ts: add PaperRatingsRow = { id:string; paper_id:string; session_id:string; rating:number; created_at:string }, PaperRatingsInsert = { id?:string; paper_id:string; session_id:string; rating:number; created_at?:string }, PaperRatingsUpdate = { rating?:number }. Add paper_ratings table to Database.public.Tables with Row/Insert/Update.",
@@ -46,5 +46,5 @@
     "cd /home/hysterical/Desktop/PQ && npm run test:unit"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 21 steps implemented. Migration 004_ratings.sql created. PapersRow/Insert/Update extended with archived/tags/publish_at. PaperRatingsRow/Insert/Update types added to database.ts with paper_ratings table in Database.public.Tables. API route POST /api/papers/[id]/rate created. StarRating client component created. Full-screen viewer at /view/[id] created outside (public) group. searchSchema extended with year_from, year_to, tag. paperInsertSchema extended with publish_at, tags. paperUpdateSchema extended with archived, publish_at, tags. FilterPanel replaced single Year select with From/To pair. HomePage updated to use year_from/year_to/tag, tag chips, DownloadHistory, and ResultFilter. requestRatelimit added to redis.ts. POST /api/request route created. /request page created as client component. ResultFilter component created. DownloadHistory component created. DownloadButton saves to pq:downloadHistory on success. BookmarkButton component created. PaperCard dynamically imports BookmarkButton. Paper detail page adds StarRating, BookmarkButton, full-screen link, updated WhatsApp text. /bookmarks client page created. Public layout header adds Courses/Saved links; footer adds tagline, Courses/Bookmarks links, GitHub icon, grid changed to grid-cols-2. /courses server page created. /courses/loading.tsx skeleton created. Build: zero errors. Tests: 30/30 pass. No dark: classes."
 }

@@ -39,7 +39,7 @@ export function FilterPanel({ programmes = [] }: FilterPanelProps) {
   const [open, setOpen] = React.useState(false)
 
   // Count active filters so we can show a badge on the toggle
-  const activeCount = ['programme', 'level', 'year', 'semester'].filter(
+  const activeCount = ['programme', 'level', 'year_from', 'year_to', 'semester'].filter(
     (k) => searchParams.get(k),
   ).length
 
@@ -69,10 +69,21 @@ export function FilterPanel({ programmes = [] }: FilterPanelProps) {
         </select>
       </div>
       <div>
-        <label htmlFor="filter-year" className="mb-1 block text-xs font-medium text-gray-600">Year</label>
-        <select id="filter-year" value={searchParams.get('year') ?? ''} onChange={(e) => updateParam('year', e.target.value)} className={selectClass}>
-          {YEAR_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <label className="mb-1 block text-xs font-medium text-gray-600">Year</label>
+        <div className="flex gap-1">
+          <div className="flex-1">
+            <label htmlFor="filter-year-from" className="mb-1 block text-xs text-gray-500">From</label>
+            <select id="filter-year-from" value={searchParams.get('year_from') ?? ''} onChange={(e) => updateParam('year_from', e.target.value)} className={selectClass}>
+              {YEAR_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.value ? o.label : 'From'}</option>)}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label htmlFor="filter-year-to" className="mb-1 block text-xs text-gray-500">To</label>
+            <select id="filter-year-to" value={searchParams.get('year_to') ?? ''} onChange={(e) => updateParam('year_to', e.target.value)} className={selectClass}>
+              {YEAR_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.value ? o.label : 'To'}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
       <div>
         <label htmlFor="filter-semester" className="mb-1 block text-xs font-medium text-gray-600">Semester</label>

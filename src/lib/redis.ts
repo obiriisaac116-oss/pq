@@ -35,3 +35,9 @@ export const subscribeRatelimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(3, '60 m'),
   prefix: 'rl:subscribe',
 })
+
+export const requestRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '60 m'),
+  prefix: 'rl:request',
+})

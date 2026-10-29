@@ -23,6 +23,16 @@ export function DownloadButton({ paperId }: DownloadButtonProps) {
       }
       const { url } = (await res.json()) as { url: string }
       window.open(url, '_blank', 'noopener,noreferrer')
+      // Save to download history
+      const MAX_HISTORY = 20
+      const key = 'pq:downloadHistory'
+      const existing: string[] = JSON.parse(localStorage.getItem(key) ?? '[]')
+      localStorage.setItem(
+        key,
+        JSON.stringify(
+          [paperId, ...existing.filter((id) => id !== paperId)].slice(0, MAX_HISTORY),
+        ),
+      )
     } catch {
       setError('Download failed. Please check your connection.')
     } finally {

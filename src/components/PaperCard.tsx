@@ -1,8 +1,14 @@
 import * as React from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import type { PapersRow, CoursesRow } from '@/types/database'
 
 export type PaperWithCoursePublic = PapersRow & { courses: CoursesRow | null }
+
+const BookmarkButton = dynamic(
+  () => import('@/components/BookmarkButton').then((m) => ({ default: m.BookmarkButton })),
+  { ssr: false },
+)
 
 interface PaperCardProps {
   paper: PaperWithCoursePublic
@@ -55,6 +61,11 @@ export function PaperCard({ paper }: PaperCardProps) {
           🔥 Trending
         </span>
       )}
+
+      {/* Bookmark button */}
+      <div className="absolute top-2 right-2 z-10">
+        <BookmarkButton paperId={paper.id} />
+      </div>
 
       <div className="flex flex-col flex-1 p-4">
         {/* Header: file type + year */}
