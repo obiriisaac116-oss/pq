@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "docs",
   "description": "Documentation updates: add README section for skipped items (2FA, student accounts), add .env.example entries for new env vars (CRON_SECRET), and update README with new features. This FEAT is independent of all others and can be done any time after FEAT-001. Included last since it only documents what was built.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Edit .env.example (or create if missing): add CRON_SECRET=<random-secret-for-cron-endpoint> under a new '# Cron endpoints' section.",
     "Edit README.md (create if missing): add a '## New Features' section listing all 23 implemented improvements with one-line descriptions. Add a '## Security' section documenting skipped item 18: 'To enable 2FA for the admin account, go to Supabase dashboard → Authentication → MFA settings and enable TOTP. After enabling, scan the QR code in your authenticator app.' Add a note about item 20: 'Student accounts (item 20) are planned for a future release and require new auth flows not yet implemented.'",
