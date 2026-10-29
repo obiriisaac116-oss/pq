@@ -9,12 +9,14 @@
 import { useState } from 'react'
 
 import type { ContactMessagesRow } from '@/types/database'
+import { useToast } from '@/components/ToastContext'
 
 type Props = {
   initialMessages: ContactMessagesRow[]
 }
 
 export function MessagesTable({ initialMessages }: Props) {
+  const toast = useToast()
   const [messages, setMessages] =
     useState<ContactMessagesRow[]>(initialMessages)
   const [busy, setBusy] = useState<string | null>(null)
@@ -32,7 +34,7 @@ export function MessagesTable({ initialMessages }: Props) {
         prev.map((m) => (m.id === msg.id ? { ...m, read: !m.read } : m)),
       )
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Update failed')
+      toast.error(err instanceof Error ? err.message : 'Update failed')
     } finally {
       setBusy(null)
     }

@@ -1,7 +1,7 @@
 {
   "task_id": "task-improvements",
-  "task_description": "Implement 13 improvement items for the PastQuestions GH website: watermark, course management admin page, bulk upload UX, PDF/image preview, sitemap/robots, PWA manifest, paper edit, analytics dashboard, dark mode, search autocomplete, email subscription, WhatsApp share, smart upload defaults.",
-  "status": "completed",
-  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "task_description": "Implement 25 improvements to the PastQuestions GH website for TTU students, covering public UX enhancements (courses page, ratings, request form, search filter, year range, download history, bookmarks, PWA, PDF viewer, WhatsApp share), admin improvements (analytics charts, CSV import, paper archive, activity log, scheduled publish, notification bell, tags), and UI polish (page transitions, Inter font, improved footer, progress bar, toast notifications). Items 18, 19, and 20 are skipped/merged as documented.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
   "blocked_reason": null
 }

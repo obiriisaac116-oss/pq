@@ -10,6 +10,7 @@
 import { useState } from 'react'
 
 import type { PaperWithCourse } from '@/app/(admin)/admin/papers/page'
+import { useToast } from '@/components/ToastContext'
 
 type Props = {
   initialPapers: PaperWithCourse[]
@@ -19,6 +20,7 @@ const SEMESTERS = ['', 'first', 'second', 'resit'] as const
 const STATUSES = ['', 'published', 'draft'] as const
 
 export function PapersTable({ initialPapers }: Props) {
+  const toast = useToast()
   const [papers, setPapers] = useState<PaperWithCourse[]>(initialPapers)
   const [filterTitle, setFilterTitle] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -58,7 +60,7 @@ export function PapersTable({ initialPapers }: Props) {
         prev.map((p) => (p.id === paper.id ? { ...p, status: newStatus } : p)),
       )
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Update failed')
+      toast.error(err instanceof Error ? err.message : 'Update failed')
     } finally {
       setBusy(null)
     }
@@ -66,7 +68,7 @@ export function PapersTable({ initialPapers }: Props) {
 
   async function deletePaper(paper: PaperWithCourse) {
     if (
-      !window.confirm(
+      !await toast.confirm(
         `Delete "${paper.title}"? This cannot be undone and will also remove the stored file.`,
       )
     )
@@ -83,7 +85,7 @@ export function PapersTable({ initialPapers }: Props) {
         return next
       })
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Delete failed')
+      toast.error(err instanceof Error ? err.message : 'Delete failed')
     } finally {
       setBusy(null)
     }
@@ -106,7 +108,7 @@ export function PapersTable({ initialPapers }: Props) {
       )
       setSelected(new Set())
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bulk action failed')
+      toast.error(err instanceof Error ? err.message : 'Bulk action failed')
     } finally {
       setBulkBusy(false)
     }
@@ -114,7 +116,7 @@ export function PapersTable({ initialPapers }: Props) {
 
   async function bulkDelete() {
     if (
-      !window.confirm(
+      !await toast.confirm(
         `Delete ${selected.size} selected paper${selected.size !== 1 ? 's' : ''}? This cannot be undone.`,
       )
     )
@@ -130,7 +132,7 @@ export function PapersTable({ initialPapers }: Props) {
       setPapers((prev) => prev.filter((p) => !selected.has(p.id)))
       setSelected(new Set())
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bulk delete failed')
+      toast.error(err instanceof Error ? err.message : 'Bulk delete failed')
     } finally {
       setBulkBusy(false)
     }

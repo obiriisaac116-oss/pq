@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import type { CoursesRow } from '@/types/database'
+import { useToast } from '@/components/ToastContext'
 
 type Props = {
   initialCourses: CoursesRow[]
@@ -18,6 +19,7 @@ type EditFields = {
 }
 
 export function CoursesTable({ initialCourses }: Props) {
+  const toast = useToast()
   const [courses, setCourses] = useState<CoursesRow[]>(initialCourses)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editFields, setEditFields] = useState<EditFields>({ code: '', name: '', programme: '' })
@@ -72,7 +74,7 @@ export function CoursesTable({ initialCourses }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Delete this course? This cannot be undone.')) return
+    if (!await toast.confirm('Delete this course? This cannot be undone.')) return
     setDeletingId(id)
     setRowError((prev) => ({ ...prev, [id]: '' }))
     try {
