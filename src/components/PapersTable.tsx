@@ -59,6 +59,44 @@ export function PapersTable({ initialPapers }: Props) {
       setPapers((prev) =>
         prev.map((p) => (p.id === paper.id ? { ...p, status: newStatus } : p)),
       )
+      // Fire-and-forget activity log
+      fetch('/api/admin/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: newStatus === 'published' ? 'paper_published' : 'paper_drafted',
+          details: { id: paper.id, title: paper.title },
+        }),
+      }).catch(() => {})
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Update failed')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function toggleArchive(paper: PaperWithCourse) {
+    const newArchived = !paper.archived
+    setBusy(paper.id)
+    try {
+      const res = await fetch(`/api/papers/${paper.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: newArchived }),
+      })
+      if (!res.ok) throw new Error('Update failed')
+      setPapers((prev) =>
+        prev.map((p) => (p.id === paper.id ? { ...p, archived: newArchived } : p)),
+      )
+      // Fire-and-forget activity log
+      fetch('/api/admin/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: newArchived ? 'paper_archived' : 'paper_unarchived',
+          details: { id: paper.id, title: paper.title },
+        }),
+      }).catch(() => {})
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Update failed')
     } finally {
@@ -84,6 +122,15 @@ export function PapersTable({ initialPapers }: Props) {
         next.delete(paper.id)
         return next
       })
+      // Fire-and-forget activity log
+      fetch('/api/admin/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'paper_deleted',
+          details: { id: paper.id, title: paper.title },
+        }),
+      }).catch(() => {})
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed')
     } finally {
@@ -245,7 +292,7 @@ export function PapersTable({ initialPapers }: Props) {
           <p className="py-8 text-center text-gray-400">No papers match the current filters.</p>
         ) : (
           filtered.map((paper) => (
-            <div key={paper.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div key={paper.id} className={['rounded-lg border border-gray-200 bg-white p-4 shadow-sm', paper.archived ? 'opacity-60' : ''].join(' ')}>
               <div className="flex items-start gap-2 mb-2">
                 <input
                   type="checkbox"
@@ -297,6 +344,13 @@ export function PapersTable({ initialPapers }: Props) {
                 >
                   Edit
                 </a>
+                <button
+                  onClick={() => toggleArchive(paper)}
+                  disabled={busy === paper.id}
+                  className="flex-1 rounded border border-amber-300 px-2 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                >
+                  {paper.archived ? 'Unarchive' : 'Archive'}
+                </button>
                 <button
                   onClick={() => deletePaper(paper)}
                   disabled={busy === paper.id}
@@ -350,7 +404,7 @@ export function PapersTable({ initialPapers }: Props) {
               filtered.map((paper) => (
                 <tr
                   key={paper.id}
-                  className="hover:bg-gray-50"
+                  className={['hover:bg-gray-50', paper.archived ? 'opacity-60' : ''].join(' ')}
                   aria-busy={busy === paper.id}
                 >
                   <td className="px-4 py-3 w-10">
@@ -421,6 +475,13 @@ export function PapersTable({ initialPapers }: Props) {
                       >
                         Edit
                       </a>
+                      <button
+                        onClick={() => toggleArchive(paper)}
+                        disabled={busy === paper.id}
+                        className="rounded border border-amber-300 px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                      >
+                        {paper.archived ? 'Unarchive' : 'Archive'}
+                      </button>
                       <button
                         onClick={() => deletePaper(paper)}
                         disabled={busy === paper.id}

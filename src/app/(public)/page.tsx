@@ -128,6 +128,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     .from('papers')
     .select<'*, courses(*)', PaperWithCoursePublic>('*, courses(*)', { count: 'exact' })
     .eq('status', 'published')
+    .eq('archived', false)
 
   if (q) {
     query = query.textSearch('search_vec', q, {

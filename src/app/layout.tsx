@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { ViewTransitions } from 'next-view-transitions'
 import { ToastProvider } from '@/components/ToastContext'
 import { ProgressBar } from '@/components/ProgressBar'
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </ToastProvider>
         </ViewTransitions>
+        <ServiceWorkerRegistration />
         <span className="fixed bottom-3 right-4 text-xs font-mono text-gray-300/60 select-none pointer-events-none z-50">
           ~hysterical
         </span>

@@ -3,12 +3,14 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { NotificationBell } from '@/components/NotificationBell'
 
 const NAV_LINKS = [
   { href: '/admin/papers', label: 'Papers' },
   { href: '/admin/upload', label: 'Upload' },
   { href: '/admin/courses', label: 'Courses' },
-  { href: '/admin/messages', label: 'Messages' },
+  { href: '/admin/activity', label: 'Activity' },
+  { href: '/admin/import', label: 'Import' },
 ] as const
 
 export function AdminNav() {
@@ -52,6 +54,7 @@ export function AdminNav() {
               </Link>
             )
           })}
+          <NotificationBell />
         </div>
 
         {/* Right actions */}

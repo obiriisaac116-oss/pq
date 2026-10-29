@@ -86,7 +86,7 @@ export type PapersRow = {
   search_vec: string
   created_at: string
   updated_at: string
-  archived: boolean | null
+  archived: boolean
   tags: string[] | null
   publish_at: string | null
 }
@@ -104,7 +104,7 @@ export type PapersInsert = {
   downloads?: number
   created_at?: string
   updated_at?: string
-  archived?: boolean | null
+  archived?: boolean
   tags?: string[] | null
   publish_at?: string | null
 }
@@ -122,7 +122,7 @@ export type PapersUpdate = {
   downloads?: number
   created_at?: string
   updated_at?: string
-  archived?: boolean | null
+  archived?: boolean
   tags?: string[] | null
   publish_at?: string | null
 }
@@ -178,6 +178,23 @@ export type SubscribersUpdate = {
   id?: string
   email?: string
   confirmed?: boolean
+}
+
+// -----------------------------------------------------------------------------
+// activity_log
+// -----------------------------------------------------------------------------
+export type ActivityLogRow = {
+  id: string
+  action: string
+  details: Record<string, unknown> | null
+  created_at: string
+}
+
+export type ActivityLogInsert = {
+  id?: string
+  action: string
+  details?: Record<string, unknown> | null
+  created_at?: string
 }
 
 // -----------------------------------------------------------------------------
@@ -258,6 +275,12 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      activity_log: {
+        Row: ActivityLogRow
+        Insert: ActivityLogInsert
+        Update: Partial<ActivityLogInsert>
+        Relationships: []
       }
     }
     Views: Record<string, never>

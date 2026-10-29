@@ -55,6 +55,10 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
     editPaper?.year ? String(editPaper.year) : String(new Date().getFullYear()),
   )
   const [semester, setSemester] = useState<string>(editPaper?.semester ?? 'first')
+  const [tags, setTags] = useState<string>(
+    editPaper?.tags ? editPaper.tags.join(', ') : '',
+  )
+  const [publishAt, setPublishAt] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
@@ -202,6 +206,8 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
               level,
               file_path: path,
               file_type: mimeToFileType(file.type),
+              tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+              ...(publishAt ? { publish_at: new Date(publishAt).toISOString() } : {}),
             }),
           })
 
@@ -222,6 +228,8 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
               year: Number(year),
               semester,
               level,
+              tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+              ...(publishAt ? { publish_at: new Date(publishAt).toISOString() } : {}),
             }),
           })
 
@@ -275,6 +283,8 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
             file_path: path,
             file_type: mimeToFileType(uploadFile.type),
             status: 'draft',
+            tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+            ...(publishAt ? { publish_at: new Date(publishAt).toISOString() } : {}),
           }),
         })
 
@@ -282,6 +292,16 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
           const { error } = (await paperRes.json()) as { error: string }
           throw new Error(error ?? 'Failed to save paper record.')
         }
+
+        // Fire-and-forget activity log
+        fetch('/api/admin/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'paper_uploaded',
+            details: { title: title.trim(), courseId },
+          }),
+        }).catch(() => {})
 
         // Persist smart defaults to localStorage before deciding what to reset.
         localStorage.setItem('pq:lastCourseId', courseId)
@@ -310,6 +330,8 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
         setLevel('100')
         setYear(String(new Date().getFullYear()))
         setSemester('first')
+        setTags('')
+        setPublishAt('')
         setFile(null)
         setProgress(0)
         if (fileInputRef.current) fileInputRef.current.value = ''
@@ -525,6 +547,37 @@ export function UploadForm({ courses, editPaper }: UploadFormProps) {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Tags */}
+      <div>
+        <label htmlFor="tags" className="mb-1 block text-xs font-medium text-gray-600">
+          Tags (comma-separated, optional)
+        </label>
+        <input
+          type="text"
+          id="tags"
+          value={tags}
+          onChange={(e) => { setTags(e.target.value); setIsDirty(true) }}
+          placeholder="e.g. MCQ, Theory, Objective"
+          disabled={isSubmitting}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
+        />
+      </div>
+
+      {/* Schedule publish */}
+      <div>
+        <label htmlFor="publish-at" className="mb-1 block text-xs font-medium text-gray-600">
+          Schedule publish (optional)
+        </label>
+        <input
+          type="datetime-local"
+          id="publish-at"
+          value={publishAt}
+          onChange={(e) => { setPublishAt(e.target.value); setIsDirty(true) }}
+          disabled={isSubmitting}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
+        />
       </div>
 
       {/* File */}
