@@ -10,13 +10,22 @@ type ImportRow = {
 }
 
 export async function POST(request: Request) {
-  // Check admin session
+  // Check admin session and role
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const adminCheck = createAdminClient()
+  const { data: profile } = await adminCheck
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (profile?.role !== 'admin') {
+    return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   let body: unknown
