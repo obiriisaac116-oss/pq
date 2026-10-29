@@ -36,3 +36,18 @@ services:
         sync: false
       - key: NEXT_PUBLIC_PHONE_NUMBER
         sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  - type: cron
+    name: publish-scheduled-papers
+    runtime: node
+    schedule: "*/15 * * * *"
+    buildCommand: echo done
+    startCommand: >
+      curl -sf -X GET $NEXT_PUBLIC_SITE_URL/api/cron/publish -H 'x-cron-secret: '$CRON_SECRET
+    envVars:
+      - key: NEXT_PUBLIC_SITE_URL
+        fromGroup: past-questions
+      - key: CRON_SECRET
+        fromGroup: past-questions

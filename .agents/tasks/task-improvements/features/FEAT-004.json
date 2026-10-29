@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Admin improvements group B: dashboard analytics charts (recharts, already installed by FEAT-001), scheduled publish (migration 007), paper tags display on PaperCard and detail page. Also adds the CSP frame-src 'self' update to next.config.mjs needed by the full-screen viewer from FEAT-002. Independent from FEAT-002 and FEAT-003 except FEAT-001 foundation.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Create supabase/migrations/007_scheduled_publish.sql: ALTER TABLE public.papers ADD COLUMN IF NOT EXISTS publish_at timestamptz;",
     "Create supabase/migrations/008_tags.sql: ALTER TABLE public.papers ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT '{}';",
@@ -30,5 +30,5 @@
     "cd /home/hysterical/Desktop/PQ && npm run test:unit"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 10 steps implemented. Migrations 007_scheduled_publish.sql and 008_tags.sql created. src/types/database.ts and src/lib/validations.ts were already updated by FEAT-003 with archived, publish_at, and tags fields — no changes needed. GET /api/cron/publish created with CRON_SECRET header check, draft paper query with archived=false and publish_at<=now(), per-paper update to status='published', and fire-and-forget activity log calls. render.yaml updated: CRON_SECRET env var added to web service; cron service entry added with */15 schedule and curl startCommand using fromGroup env vars. DashboardCharts client component created with LineChart (downloads over time with 30-day pre-populated buckets), BarChart (top 5 courses by papers, layout=vertical), and PieChart (papers by level with Cell colors). Admin dashboard page: import renamed to dynamicImport to avoid collision with `export const dynamic = 'force-dynamic'`; three aggregation queries added after Promise.all; DashboardCharts rendered between quick actions and top papers section. PaperCard: tags chips (up to 3) displayed below semester badge. Paper detail page: tags row added to meta grid spanning full width. next.config.mjs: frame-src updated to include 'self'. Build: zero errors. Tests: 30/30 pass. No dark: classes."
 }

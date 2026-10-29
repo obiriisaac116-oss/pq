@@ -117,6 +117,20 @@ export function PaperCard({ paper }: PaperCardProps) {
           </Badge>
         </div>
 
+        {/* Tags */}
+        {paper.tags && paper.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {paper.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Footer */}
         <div className="mt-auto flex items-center justify-between gap-2">
           <span className="flex items-center gap-1 text-xs text-gray-400">

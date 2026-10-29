@@ -1,7 +1,7 @@
 // src/app/(admin)/admin/page.tsx
 //
 // Admin dashboard — summary counts, quick-action buttons, top papers by
-// downloads, and recent uploads.
+// downloads, recent uploads, and analytics charts.
 //
 // Uses the admin (service-role) client to read all papers and messages
 // regardless of their status, which the anon-key + RLS would otherwise filter.
@@ -11,10 +11,16 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
+import dynamicImport from 'next/dynamic'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminNav } from '@/components/AdminNav'
 import type { CoursesRow } from '@/types/database'
+
+const DashboardCharts = dynamicImport(
+  () => import('@/components/DashboardCharts'),
+  { ssr: false },
+)
 
 export default async function AdminDashboard() {
   const db = createAdminClient()
@@ -49,6 +55,72 @@ export default async function AdminDashboard() {
 
   const topPapers = topPapersRes.data ?? []
   const recentPapers = recentPapersRes.data ?? []
+
+  // -------------------------------------------------------------------------
+  // Chart data aggregation
+  // -------------------------------------------------------------------------
+
+  // 1. Downloads over last 30 days — group by calendar date
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: allPapers } = await db
+    .from('papers')
+    .select('downloads, updated_at')
+    .gte('updated_at', thirtyDaysAgo)
+
+  // Build a map of date → summed downloads
+  const downloadsByDate = new Map<string, number>()
+  // Pre-populate every day in the last 30 days so the line chart is continuous
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    const key = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+    downloadsByDate.set(key, 0)
+  }
+  for (const p of allPapers ?? []) {
+    if (!p.updated_at) continue
+    const key = new Date(p.updated_at).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+    })
+    if (downloadsByDate.has(key)) {
+      downloadsByDate.set(key, (downloadsByDate.get(key) ?? 0) + (p.downloads ?? 0))
+    }
+  }
+  const downloadsData = Array.from(downloadsByDate.entries()).map(([date, downloads]) => ({
+    date,
+    downloads,
+  }))
+
+  // 2. Top 5 courses by number of published papers
+  const { data: pubPapers } = await db
+    .from('papers')
+    .select('course_id, courses(code)')
+    .eq('status', 'published')
+
+  const courseCountMap = new Map<string, number>()
+  for (const p of pubPapers ?? []) {
+    const course = p.courses as CoursesRow | null
+    const code = course?.code ?? 'Unknown'
+    courseCountMap.set(code, (courseCountMap.get(code) ?? 0) + 1)
+  }
+  const courseData = Array.from(courseCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([code, count]) => ({ code, count }))
+
+  // 3. Papers by level
+  const { data: levelPapers } = await db
+    .from('papers')
+    .select('level')
+    .eq('status', 'published')
+
+  const levelCountMap = new Map<string, number>()
+  for (const p of levelPapers ?? []) {
+    const lvl = p.level ? `L${p.level}` : 'Unknown'
+    levelCountMap.set(lvl, (levelCountMap.get(lvl) ?? 0) + 1)
+  }
+  const levelData = Array.from(levelCountMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([level, count]) => ({ level, count }))
 
   const stats = [
     {
@@ -130,6 +202,13 @@ export default async function AdminDashboard() {
             Manage courses
           </Link>
         </div>
+
+        {/* Analytics charts */}
+        <DashboardCharts
+          downloadsData={downloadsData}
+          courseData={courseData}
+          levelData={levelData}
+        />
 
         {/* Top papers by downloads */}
         <section className="mt-10">

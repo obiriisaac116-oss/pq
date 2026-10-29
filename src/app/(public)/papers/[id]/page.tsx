@@ -218,6 +218,22 @@ export default async function PaperPage({ params }: PaperPageProps) {
               </dd>
             </div>
           )}
+
+          {paper.tags && paper.tags.length > 0 && (
+            <div className="col-span-2 sm:col-span-3">
+              <dt className="font-medium text-gray-500">Tags</dt>
+              <dd className="mt-0.5 flex flex-wrap gap-1">
+                {paper.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </dd>
+            </div>
+          )}
         </dl>
 
         {/* Preview */}
