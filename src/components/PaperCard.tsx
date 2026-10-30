@@ -48,22 +48,22 @@ export function PaperCard({ paper }: PaperCardProps) {
   const fileType = paper.file_type ?? 'pdf'
 
   return (
-    <article className="group relative flex flex-col rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+    <article className="group relative flex flex-col rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
       {/* Top color bar based on semester */}
-      <div className={`h-1 rounded-t-2xl w-full ${
+      <div className={`h-1 w-full flex-shrink-0 ${
         semester === 'resit' ? 'bg-amber-400' :
         semester === 'second' ? 'bg-violet-500' : 'bg-brand-primary'
       }`} />
 
       {/* Trending badge */}
       {(paper.downloads ?? 0) > 10 && (
-        <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+        <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 shadow-sm">
           🔥 Trending
         </span>
       )}
 
-      {/* Bookmark button */}
-      <div className="absolute top-2 right-2 z-10">
+      {/* Bookmark button — top right, inside card */}
+      <div className="absolute top-3 right-3 z-10">
         <BookmarkButton paperId={paper.id} />
       </div>
 
@@ -150,14 +150,16 @@ export function PaperCard({ paper }: PaperCardProps) {
         </div>
       </div>
 
-      {/* Hover tooltip (desktop only) */}
-      <div
-        role="tooltip"
-        className="pointer-events-none absolute inset-x-0 top-full z-20 mt-1 hidden rounded-lg bg-white px-3 py-2 shadow-lg ring-1 ring-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-150 md:block"
-      >
-        <p className="text-xs font-semibold text-gray-800">{course?.name ?? ''}</p>
-        <p className="text-xs text-gray-500">{course?.programme ?? ''}</p>
-      </div>
+      {/* Hover tooltip — desktop only, positioned inside card to avoid overflow */}
+      {course && (course.name || course.programme) && (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute left-4 right-4 bottom-14 z-20 hidden rounded-lg bg-gray-900 px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 md:block"
+        >
+          <p className="text-xs font-semibold text-white">{course.name ?? ''}</p>
+          {course.programme && <p className="text-xs text-gray-300">{course.programme}</p>}
+        </div>
+      )}
     </article>
   )
 }
